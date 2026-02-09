@@ -1,0 +1,11 @@
+
+# PYTHON PACKAGES
+# do "pip install -r requirements.txt" to install these
+# fastapi = web framework that creates the API
+# uvicorn = server that runs FastAPI
+# python-dotenv = reads .env file for secrets
+# sqlalchemy = talks to database
+fastapi==0.109.0
+uvicorn==0.27.0
+python-dotenv==1.0.0
+sqlalchemy==2.0.36

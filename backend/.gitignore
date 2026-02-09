@@ -1,0 +1,5 @@
+# .env = YOUR SECRET KEYS (never push!)
+# *.db = database files (local to each person)
+
+.env
+*.db
