@@ -10,16 +10,35 @@ class CanvasContentRetriever:
         self.headers = {"Authorization": f"Bearer {access_token}"}
     
     # Get all courses accessible for the user
+    # Returns only: id, name, course_code, and enrollment role/state
     def get_courses(self) -> List[Dict]:
         url = f"{self.base_url}/api/v1/courses"
         params = {
             "enrollment_state": "active",
             "per_page": 100
         }
-        
+
         response = requests.get(url, headers=self.headers, params=params)
         response.raise_for_status()
-        return response.json()
+        raw_courses = response.json()
+
+        filtered_courses = []
+        for course in raw_courses:
+            enrollments = []
+            for enrollment in course.get("enrollments", []):
+                enrollments.append({
+                    "role": enrollment.get("role"),
+                    "enrollment_state": enrollment.get("enrollment_state")
+                })
+
+            filtered_courses.append({
+                "id": course["id"],
+                "name": course.get("name"),
+                "course_code": course.get("course_code"),
+                "enrollments": enrollments
+            })
+
+        return filtered_courses
     
     """
     Get all files for a course
@@ -152,8 +171,7 @@ if __name__ == "__main__":
     # Initialize
     canvas = CanvasContentRetriever(
         canvas_url="https://ufl.instructure.com",
-        access_token="" # ADD CANVAS TOKEN HERE FOR TESTING
-    )
+        access_token="PLACEHOLDER")
     
     # Get all courses
     courses = canvas.get_courses()
@@ -165,46 +183,49 @@ if __name__ == "__main__":
     #     course_name = courses[0]['name']
     #     print(f"\nProcessing course: {course_name} (ID: {course_id})")
 
-        course_id = 389226
-        # Get all files from Aman's sandbox coursex
-        files = canvas.get_course_files(course_id)
-        print(f"\nFiles ({len(files)}):")
-        for file in files:
-            print(f"  - {file['display_name']} (ID: {file['id']}, Type: {file.get('mime_class', 'unknown')})")
-            print(f"    URL: {file['url']}")
-            print(f"    Updated: {file['updated_at']}")
+        # Print out the first course:
+        print(courses[0])
+
+        # course_id = 389226
+        # # Get all files from Aman's sandbox coursex
+        # files = canvas.get_course_files(course_id)
+        # print(f"\nFiles ({len(files)}):")
+        # for file in files:
+        #     print(f"  - {file['display_name']} (ID: {file['id']}, Type: {file.get('mime_class', 'unknown')})")
+        #     # print(f"    URL: {file['url']}")
+        #     print(f"    Updated: {file['updated_at']}")
         
         # # Get all quizzes
-        quizzes = canvas.get_course_quizzes(course_id)
-        print(f"\nQuizzes ({len(quizzes)}):")
-        for quiz in quizzes:
-            print(f"  - {quiz['title']} (ID: {quiz['id']}, Questions: {quiz.get('question_count', 0)})")
+        # quizzes = canvas.get_course_quizzes(course_id)
+        # print(f"\nQuizzes ({len(quizzes)}):")
+        # for quiz in quizzes:
+        #     print(f"  - {quiz['title']} (ID: {quiz['id']}, Questions: {quiz.get('question_count', 0)})")
 
-        # Print questions and answers from Conceptual Quiz 2
-        quiz_id = 1580714
-        print(f"\n{'='*60}")
-        print("Questions from Conceptual Quiz 2")
-        print(f"{'='*60}")
+        # # Print questions and answers from Conceptual Quiz 2
+        # quiz_id = 1580714
+        # print(f"\n{'='*60}")
+        # print("Questions from Conceptual Quiz 2")
+        # print(f"{'='*60}")
 
-        questions = canvas.get_quiz_questions(course_id, quiz_id)
-        for i, question in enumerate(questions, 1):
-            print(f"\nQuestion {i}: {question.get('question_name', 'Untitled')}")
-            print(f"  {question.get('question_text', 'No question text')}")
-            print(f"  Type: {question.get('question_type', 'unknown')}")
+        # questions = canvas.get_quiz_questions(course_id, quiz_id)
+        # for i, question in enumerate(questions, 1):
+        #     print(f"\nQuestion {i}: {question.get('question_name', 'Untitled')}")
+        #     print(f"  {question.get('question_text', 'No question text')}")
+        #     print(f"  Type: {question.get('question_type', 'unknown')}")
 
-            answers = question.get('answers', [])
-            if answers:
-                print("  Answer options:")
-                for j, answer in enumerate(answers, 1):
-                    answer_text = answer.get('text') or answer.get('html') or 'No text'
-                    print(f"    {j}. {answer_text}")
+        #     answers = question.get('answers', [])
+        #     if answers:
+        #         print("  Answer options:")
+        #         for j, answer in enumerate(answers, 1):
+        #             answer_text = answer.get('text') or answer.get('html') or 'No text'
+        #             print(f"    {j}. {answer_text}")
         
-        # Download a PDF example
-        pdf_files = [f for f in files if f.get('mime_class') == 'pdf']
-        if pdf_files:
-            pdf = pdf_files[0]
-            print(f"\nDownloading example PDF: {pdf['display_name']}")
-            content = canvas.download_file(pdf['url'], save_path=f"./downloaded_{pdf['display_name']}")
-            file_hash = canvas.get_file_hash(content)
-            print(f"  Hash: {file_hash}")
-            print(f"  Size: {len(content)} bytes")
+        # # Download a PDF example
+        # pdf_files = [f for f in files if f.get('mime_class') == 'pdf']
+        # if pdf_files:
+        #     pdf = pdf_files[0]
+        #     print(f"\nDownloading example PDF: {pdf['display_name']}")
+        #     content = canvas.download_file(pdf['url'], save_path=f"./downloaded_{pdf['display_name']}")
+        #     file_hash = canvas.get_file_hash(content)
+        #     print(f"  Hash: {file_hash}")
+        #     print(f"  Size: {len(content)} bytes")
