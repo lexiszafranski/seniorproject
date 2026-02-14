@@ -74,30 +74,38 @@ class CanvasContentRetriever:
     
     """
     Get all quizzes for a course
-        
-    Returns list of dicts with:
-        - id: Quiz ID
-        - title: Quiz name
-        - description: Quiz description (HTML)
-        - quiz_type: Type of quiz
-        - published: Whether it's published
-        - question_count: Number of questions
+
+    Returns only: id, title, description, html_url, question_count,
+    points_possible, due_at, published
     """
     def get_course_quizzes(self, course_id: int) -> List[Dict]:
         url = f"{self.base_url}/api/v1/courses/{course_id}/quizzes"
         params = {"per_page": 100}
-        
+
         all_quizzes = []
-        
+
         while url:
             response = requests.get(url, headers=self.headers, params=params)
             response.raise_for_status()
             all_quizzes.extend(response.json())
-            
+
             url = response.links.get('next', {}).get('url')
             params = {}
-        
-        return all_quizzes
+
+        filtered_quizzes = []
+        for quiz in all_quizzes:
+            filtered_quizzes.append({
+                "id": quiz["id"],
+                "title": quiz.get("title"),
+                "description": quiz.get("description"),
+                "html_url": quiz.get("html_url"),
+                "question_count": quiz.get("question_count"),
+                "points_possible": quiz.get("points_possible"),
+                "due_at": quiz.get("due_at"),
+                "published": quiz.get("published")
+            })
+
+        return filtered_quizzes
     
     """
     Get all questions for a specific quiz

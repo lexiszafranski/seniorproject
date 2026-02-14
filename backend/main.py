@@ -111,8 +111,8 @@ async def sync_courses(current_user: User = Depends(get_current_user)):
 
 """
 Retrieves all quizzes for a given course from Canvas.
-Each quiz has: id, title, description (HTML), quiz_type, published, question_count.
-This function is called every time an instructor tries to make a new quiz. If a quiz's metadata is not in MongoDB, it will be added at this point.
+Each quiz has: id, title, description (HTML), html_url, question_count, points_possible, due_at, published.
+This function should be called every time an instructor tries to make a new quiz. If a quiz's metadata is not in MongoDB, a new Mongo document will be made for it at this point.
 """
 @app.get("/api/courses/{course_id}/quizzes")
 async def retrieve_quizzes(course_id: int, current_user: User = Depends(get_current_user)):
