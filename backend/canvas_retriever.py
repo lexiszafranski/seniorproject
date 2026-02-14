@@ -75,8 +75,7 @@ class CanvasContentRetriever:
     """
     Get all quizzes for a course
 
-    Returns only: id, title, description, html_url, question_count,
-    points_possible, due_at, published
+    Returns only: id, title, description, html_url, question_count, points_possible, due_at, published
     """
     def get_course_quizzes(self, course_id: int) -> List[Dict]:
         url = f"{self.base_url}/api/v1/courses/{course_id}/quizzes"
