@@ -13,6 +13,7 @@ MAIN API SERVER
 
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
+import os
 from dotenv import load_dotenv
 from database import get_db, User, init_db
 from sqlalchemy.orm import Session
@@ -89,7 +90,7 @@ Example return:
 @app.post("/api/sync-courses")
 async def sync_courses(current_user: User = Depends(get_current_user)):
     # TODO: retrieve canvas_token from user's record in MongoDB once set up
-    canvas_token = "PLACEHOLDER"
+    canvas_token = os.getenv("CANVAS_TOKEN")
     if not canvas_token:
         raise HTTPException(status_code=400, detail="No Canvas token found for user. Please add your Canvas API token.")
 
@@ -106,3 +107,29 @@ async def sync_courses(current_user: User = Depends(get_current_user)):
     # something like: db.users.update_one({"clerk_id": current_user.clerk_id}, {"$set": {"courses": courses}})
 
     return {"courses_synced": len(courses), "courses": courses}
+
+
+"""
+Retrieves all quizzes for a given course from Canvas.
+Each quiz has: id, title, description (HTML), quiz_type, published, question_count.
+This function is called every time an instructor tries to make a new quiz. If a quiz's metadata is not in MongoDB, it will be added at this point.
+"""
+@app.get("/api/courses/{course_id}/quizzes")
+async def retrieve_quizzes(course_id: int, current_user: User = Depends(get_current_user)):
+    # TODO: retrieve canvas_token from user's record in MongoDB once set up
+    canvas_token = os.getenv("CANVAS_TOKEN")
+    if not canvas_token:
+        raise HTTPException(status_code=400, detail="No Canvas token found for user. Please add your Canvas API token.")
+
+    canvas = CanvasContentRetriever(
+        canvas_url="https://ufl.instructure.com",
+        access_token=canvas_token)
+
+    try:
+        quizzes = canvas.get_course_quizzes(course_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch quizzes from Canvas: {str(e)}")
+
+    # TODO: save quizzes to MongoDB
+
+    return {"quiz_count": len(quizzes), "quizzes": quizzes}

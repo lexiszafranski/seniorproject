@@ -1,6 +1,10 @@
+import os
 import requests
 from typing import List, Dict, Optional
 import hashlib
+from dotenv import load_dotenv
+
+load_dotenv()
  
 class CanvasContentRetriever:
 
@@ -171,7 +175,8 @@ if __name__ == "__main__":
     # Initialize
     canvas = CanvasContentRetriever(
         canvas_url="https://ufl.instructure.com",
-        access_token="PLACEHOLDER")
+        access_token=os.getenv("CANVAS_TOKEN")
+    )
     
     # Get all courses
     courses = canvas.get_courses()
@@ -186,7 +191,7 @@ if __name__ == "__main__":
         # Print out the first course:
         print(courses[0])
 
-        # course_id = 389226
+        course_id = 389226
         # # Get all files from Aman's sandbox coursex
         # files = canvas.get_course_files(course_id)
         # print(f"\nFiles ({len(files)}):")
@@ -195,11 +200,11 @@ if __name__ == "__main__":
         #     # print(f"    URL: {file['url']}")
         #     print(f"    Updated: {file['updated_at']}")
         
-        # # Get all quizzes
-        # quizzes = canvas.get_course_quizzes(course_id)
-        # print(f"\nQuizzes ({len(quizzes)}):")
-        # for quiz in quizzes:
-        #     print(f"  - {quiz['title']} (ID: {quiz['id']}, Questions: {quiz.get('question_count', 0)})")
+        # Get all quizzes
+        quizzes = canvas.get_course_quizzes(course_id)
+        print(f"\nQuizzes ({len(quizzes)}):")
+        for quiz in quizzes:
+            print(f"  - {quiz['title']} (ID: {quiz['id']}, Questions: {quiz.get('question_count', 0)})")
 
         # # Print questions and answers from Conceptual Quiz 2
         # quiz_id = 1580714
