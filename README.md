@@ -1,4 +1,4 @@
-# seniorproject
+# Assessly: Automated Practice Question Generation
 
 ## Running the Backend
 
