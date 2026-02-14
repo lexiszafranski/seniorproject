@@ -48,29 +48,49 @@ class CanvasContentRetriever:
     Get all files for a course
         Returns list of dicts with:
             - id: File ID needed to download files
-            - display_name: File's name
-            - url: Direct download URL
-            - updated_at: Last modified timestamp
-            - size: File size in bytes
-            - mime_class: File type (pdf, doc, etc.)
+            - folder_id: ID of the folder containing the file
+            - display_name: File's display name
+            - filename: Actual filename
             - content-type: MIME type
+            - url: Direct download URL
+            - size: File size in bytes
+            - created_at: When the file was first uploaded
+            - updated_at: Last time Canvas metadata was touched
+            - modified_at: Last time the actual file content was changed
+            - mime_class: File type (pdf, doc, etc.)
     """
     def get_course_files(self, course_id: int) -> List[Dict]:
         url = f"{self.base_url}/api/v1/courses/{course_id}/files"
         params = {"per_page": 100}
-        
+
         all_files = []
-        
+
         while url:
             response = requests.get(url, headers=self.headers, params=params)
             response.raise_for_status()
             all_files.extend(response.json())
-            
+
             # Handle pagination
             url = response.links.get('next', {}).get('url')
             params = {}  # Params already in next URL
-        
-        return all_files
+
+        filtered_files = []
+        for file in all_files:
+            filtered_files.append({
+                "id": file["id"],
+                "folder_id": file.get("folder_id"),
+                "display_name": file.get("display_name"),
+                "filename": file.get("filename"),
+                "content-type": file.get("content-type"),
+                "url": file.get("url"),
+                "size": file.get("size"),
+                "created_at": file.get("created_at"),
+                "updated_at": file.get("updated_at"),
+                "modified_at": file.get("modified_at"),
+                "mime_class": file.get("mime_class"),
+            })
+
+        return filtered_files
     
     """
     Get all quizzes for a course

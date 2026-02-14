@@ -151,3 +151,49 @@ async def retrieve_quizzes(course_id: int, current_user: User = Depends(get_curr
     # TODO: save quizzes to MongoDB
 
     return {"quiz_count": len(quizzes), "quizzes": quizzes}
+
+
+"""
+Retrieves all files for a given course from Canvas.
+Each file has: id, display_name, url (direct download), updated_at, size (bytes), mime_class, content-type.
+
+Example return:
+{
+  "file_count": 1,
+  "files": [
+    {
+      "id": 63265314,
+      "folder_id": 6794316,
+      "display_name": "0_Introduction_and_CourseOverview.pdf",
+      "filename": "0_Introduction_and_CourseOverview.pdf",
+      "content-type": "application/pdf",
+      "url": "https://ufl.instructure.com/files/63265314/download?download_frd=1&verifier=th6QWGRXtjNiourZyexyOM2FX2n8lDFRmqNXYCy9",
+      "size": 1887556,
+      "created_at": "2021-01-12T22:15:59Z",
+      "updated_at": "2021-10-20T16:41:21Z",
+      "modified_at": "2021-01-12T22:15:59Z",
+      "mime_class": "pdf"
+    }
+  ]
+}
+"""
+@app.get("/api/courses/{course_id}/files")
+async def retrieve_files(course_id: int, current_user: User = Depends(get_current_user)):
+    # TODO: retrieve canvas_token from user's record in MongoDB once set up
+    canvas_token = os.getenv("CANVAS_TOKEN")
+    if not canvas_token:
+        raise HTTPException(status_code=400, detail="No Canvas token found for user. Please add your Canvas API token.")
+
+    canvas = CanvasContentRetriever(
+        canvas_url="https://ufl.instructure.com",
+        access_token=canvas_token)
+
+    try:
+        files = canvas.get_course_files(course_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch files from Canvas: {str(e)}")
+
+    # TODO: save files metadata to MongoDB
+    # Also, save the time at which the file contents were added to MongoDB, so we can check if the file has been updated on Canvas since then and needs to be re-fetched.
+
+    return {"file_count": len(files), "files": files}
