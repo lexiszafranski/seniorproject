@@ -1,46 +1,58 @@
 """
-DATABASE SETUP
-- Uses SQLite (creates a simple file called app.db - no setup needed for now)
-- SQLAlchemy is the library that talks to the database
-- User table stores:
-    - id: auto-incrementing number (1, 2, 3...)
+DATABASE SETUP - MongoDB
+- Uses MongoDB Atlas
+- pymongo is the library that talks to MongoDB
+- Users collection stores:
+    - _id: auto-generated MongoDB ObjectId
     - clerk_id: the ID from Clerk (links to their auth system)
     - created_at: when user first logged in
-- get_db(): creates a connection for each request, closes when done
-- init_db(): creates the tables when server starts
+    - canvas_token: user's Canvas API token (optional)
+    - courses: list of synced Canvas courses (optional)
+- get_db(): returns the database instance
 """
 
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from pymongo import MongoClient
 from datetime import datetime
 import os
+from dotenv import load_dotenv
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
+load_dotenv()
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
-)
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+DB_NAME = os.getenv("DB_NAME", "quiz_generator")
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+client = MongoClient(MONGODB_URI)
+db = client[DB_NAME]
 
+# collections
+users_collection = db["users"]
 
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    clerk_id = Column(String(255), unique=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+# create indexes
+users_collection.create_index("clerk_id", unique=True)
 
 
 def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    return db
 
 
-def init_db():
-    Base.metadata.create_all(bind=engine)
+def get_or_create_user(clerk_id: str) -> dict:
+    """Find user by clerk_id, or create if doesn't exist"""
+    user = users_collection.find_one({"clerk_id": clerk_id})
+    if not user:
+        user = {
+            "clerk_id": clerk_id,
+            "created_at": datetime.utcnow(),
+            "canvas_token": None,
+            "courses": []
+        }
+        result = users_collection.insert_one(user)
+        user["_id"] = result.inserted_id
+    return user
+
+
+def update_user(clerk_id: str, update_data: dict):
+    """Update user document"""
+    users_collection.update_one(
+        {"clerk_id": clerk_id},
+        {"$set": update_data}
+    )
