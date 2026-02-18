@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
-import './styles//App.css'
+import './styles/App.css'
+import { HashRouter, Routes, Route } from 'react-router-dom';
+import Dashboard from './pages/dashboard'
+
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <p>this is where we can organize each page</p>
-    </>
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+      </Routes>
+    </HashRouter>
   )
 }
-
 export default App
