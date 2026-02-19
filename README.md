@@ -16,7 +16,7 @@
    ```
    npm run dev
    ```
-4. To see login page, change browser url to:  http://localhost:<your local host num>/#/login
+4. To see login page, change browser url to:  "http://localhost:{your local host num}/#/login"
 
 ## Running the Backend
 
