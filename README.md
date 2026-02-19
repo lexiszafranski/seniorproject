@@ -1,5 +1,23 @@
 # Assessly: Automated Practice Question Generation
 
+## Running the Frontend
+
+1. Navigate to the Assessly directory:
+   ```
+   cd Assessly
+   ```
+
+2. Install any necessary dependencies:
+   ```
+   npm i
+   ```
+   
+2. Running the project
+   ```
+   npm run dev
+   ```
+
+
 ## Running the Backend
 
 1. Navigate to the backend directory:
