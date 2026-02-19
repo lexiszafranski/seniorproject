@@ -1,0 +1,109 @@
+.login{ 
+    display: block;
+    
+}
+.login-page {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    background-color: #FFFFFF;
+    gap: 4rem;
+    padding-top: 4rem;
+    padding-left: 3rem;
+    padding-right: 3rem;
+    box-sizing: border-box;
+}
+.image-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    align-self: stretch;
+    padding: 3rem 0.5rem;
+    border-radius: 20px;
+    background: #F7FAF5;
+}
+.login-img {
+    width: 50%;
+    height: auto;
+}
+.main-title {
+    margin: 0;
+    text-align: center;
+}
+.sub-title {
+    margin: 0;
+}
+.close-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+}
+.input {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    color: #000000
+}
+.input-field {
+    display: flex;
+    padding: 15px 30px;
+    align-items: center;
+    gap: 10px;
+    align-self: stretch;
+    border-radius: 10px;
+    border: 1px solid #838181;
+    background: transparent;
+}
+.login-button {
+    display: flex;
+    padding: 15px 40px;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    align-self: stretch;
+    border-radius: 50px;
+    background: #000;
+}
+.registration-container {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    margin-top: 10px;
+    margin: 0;
+    padding: 0;
+}
+.register-button {
+    color: #54A841;
+    font-weight: 400;
+}
+
+@media (min-width: 992px) {
+  .login-page {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    background-color: #FFFFFF;
+    gap: 5rem;
+    padding: 7rem 8rem;
+    box-sizing: border-box;
+    }
+    .image-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    align-self: stretch;
+    padding: 3rem 0.5rem;
+    border-radius: 20px;
+    background: #F7FAF5;
+}
+}
+ 
