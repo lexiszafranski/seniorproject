@@ -93,7 +93,7 @@ class CanvasContentRetriever:
         return filtered_files
     
     """
-    Get all quizzes for a course
+    Get all quizzes for a course (metadata - not content)
 
     Returns only: id, title, description, html_url, question_count, points_possible, due_at, published
     """
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     #     print(f"\nProcessing course: {course_name} (ID: {course_id})")
 
         # Print out the first course:
-        print(courses[0])
+        # print(courses[0])
 
         course_id = 389226
         # # Get all files from Aman's sandbox coursex
@@ -227,19 +227,20 @@ if __name__ == "__main__":
         #     # print(f"    URL: {file['url']}")
         #     print(f"    Updated: {file['updated_at']}")
         
-        # Get all quizzes
-        quizzes = canvas.get_course_quizzes(course_id)
-        print(f"\nQuizzes ({len(quizzes)}):")
-        for quiz in quizzes:
-            print(f"  - {quiz['title']} (ID: {quiz['id']}, Questions: {quiz.get('question_count', 0)})")
+        # # Get all quizzes
+        # quizzes = canvas.get_course_quizzes(course_id)
+        # print(f"\nQuizzes ({len(quizzes)}):")
+        # for quiz in quizzes:
+        #     print(f"  - {quiz['title']} (ID: {quiz['id']}, Questions: {quiz.get('question_count', 0)})")
 
-        # # Print questions and answers from Conceptual Quiz 2
-        # quiz_id = 1580714
-        # print(f"\n{'='*60}")
-        # print("Questions from Conceptual Quiz 2")
-        # print(f"{'='*60}")
+        # Print questions and answers from Conceptual Quiz 2
+        quiz_id = 1580714
+        print(f"\n{'='*60}")
+        print("Questions from Conceptual Quiz 2")
+        print(f"{'='*60}")
 
-        # questions = canvas.get_quiz_questions(course_id, quiz_id)
+        questions = canvas.get_quiz_questions(course_id, quiz_id)
+        print(questions[0])  # Print the first question for reference
         # for i, question in enumerate(questions, 1):
         #     print(f"\nQuestion {i}: {question.get('question_name', 'Untitled')}")
         #     print(f"  {question.get('question_text', 'No question text')}")
