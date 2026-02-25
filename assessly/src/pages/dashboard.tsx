@@ -1,14 +1,16 @@
+import { useUser } from '@clerk/clerk-react';
 import '../styles/dashboard.css';
 import ufImg from '../assets/ufimg.png';
 
 function Dashboard() {
+  const { user } = useUser();
   return (
     <div className="dashboard">
       <header className="header">
         <div className="header-logo">
         <img src={ufImg} alt="description" style={{ width: '100px', height: 'auto'}} />
         </div>
-        <h1 className="header-welcome">WELCOME BACK, User!</h1>
+        <h1 className="header-welcome">WELCOME BACK, {user?.firstName?.toUpperCase() || 'User'}!</h1>
         <div className="header-actions">
           <button type="button" className="btn-new-quiz">New Quiz</button>
           <div className="header-avatar" />

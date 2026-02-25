@@ -17,7 +17,7 @@ load_dotenv()
 CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
 
 
-async def verify_clerk_token(token: str) -> str:
+async def verify_clerk_token(token: str) -> dict:
     if not CLERK_SECRET_KEY:
         raise ValueError("CLERK_SECRET_KEY not in .env")
     
@@ -30,4 +30,10 @@ async def verify_clerk_token(token: str) -> str:
     decoded = base64.urlsafe_b64decode(payload)
     data = json.loads(decoded)
     
-    return data.get("sub")
+    # Return all useful fields
+    return {
+        "sub": data.get("sub"),
+        "email": data.get("email"),
+        "first_name": data.get("first_name"),
+        "last_name": data.get("last_name")
+    }

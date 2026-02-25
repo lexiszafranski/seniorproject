@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from database import get_or_create_user, update_user, users_collection
 from clerk_auth import verify_clerk_token
 from canvas_retriever import CanvasContentRetriever
+from database import get_or_create_user, update_user, users_collection, init_db
 
 load_dotenv()
 
@@ -32,11 +33,21 @@ app.add_middleware(
 
 async def get_current_user(authorization: str = Header(...)) -> dict:
     token = authorization.replace("Bearer ", "")
-    clerk_user_id = await verify_clerk_token(token)
-    user = get_or_create_user(clerk_user_id)
+    clerk_data = await verify_clerk_token(token)
+    
+    user_data = {
+        "email": clerk_data.get("email"),
+        "first_name": clerk_data.get("first_name"),
+        "last_name": clerk_data.get("last_name")
+    }
+    
+    user = get_or_create_user(clerk_data.get("sub"), user_data)
     return user
 
-
+@app.on_event("startup")
+def startup():
+    init_db()
+    
 @app.get("/")
 async def root():
     return {"status": "running"}
@@ -45,7 +56,10 @@ async def root():
 async def get_me(current_user: dict = Depends(get_current_user)):
     return {
         "id": str(current_user["_id"]),
-        "clerk_id": current_user["clerk_id"]
+        "clerk_id": current_user["clerk_id"],
+        "email": current_user.get("email"),
+        "first_name": current_user.get("first_name"),
+        "last_name": current_user.get("last_name")
     }
 
 """
