@@ -1,5 +1,14 @@
 """
 DATABASE SETUP - MongoDB
+- Uses MongoDB Atlas
+- pymongo is the library that talks to MongoDB
+- Users collection stores:
+    - _id: auto-generated MongoDB ObjectId
+    - clerk_id: the ID from Clerk (links to their auth system)
+    - created_at: when user first logged in
+    - canvas_token: user's Canvas API token (optional)
+    - courses: list of synced Canvas courses (optional)
+- get_db(): returns the database instance
 """
 
 from pymongo import MongoClient
@@ -70,6 +79,7 @@ def get_or_create_user(clerk_id: str, user_data: dict = None) -> dict:
 
 
 def update_user(clerk_id: str, update_data: dict):
+    """Update user document"""
     users_collection.update_one(
         {"clerk_id": clerk_id},
         {"$set": update_data}
