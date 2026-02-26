@@ -177,3 +177,44 @@ async def retrieve_files(course_id: int, current_user: dict = Depends(get_curren
         raise HTTPException(status_code=502, detail=f"Failed to fetch files from Canvas: {str(e)}")
 
     return {"file_count": len(files), "files": files}
+
+"""
+Retrieves all questions for a given quiz from Canvas.
+Each question has: id, question_name, question_text (HTML), question_type, points_possible, answers (with weight indicating correctness: 100 = correct, 0 = incorrect).
+
+Example return:
+{
+  "question_count": 1,
+  "questions": [
+    {
+      "id": 23919174,
+      "question_name": "Question",
+      "question_text": "<p>What is the computational complexity?</p>",
+      "question_type": "multiple_choice_question",
+      "points_possible": 1.0,
+      "answers": [
+        {"id": 8940, "text": "O(1)", "weight": 0},
+        {"id": 5589, "text": "O(n^2)", "weight": 100}
+      ]
+    }
+  ]
+}
+"""
+@app.get("/api/courses/{course_id}/quizzes/{quiz_id}/questions")
+async def retrieve_quiz_questions(course_id: int, quiz_id: int):
+    # canvas_token = current_user.get("canvas_token") or os.getenv("CANVAS_TOKEN")
+    canvas_token = os.getenv("CANVAS_TOKEN")
+    if not canvas_token:
+        raise HTTPException(status_code=400, detail="No Canvas token found. Please add your Canvas API token.")
+
+    canvas = CanvasContentRetriever(
+        canvas_url="https://ufl.instructure.com",
+        access_token=canvas_token
+    )
+
+    try:
+        questions = canvas.get_quiz_questions(course_id, quiz_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch quiz questions from Canvas: {str(e)}")
+
+    return {"question_count": len(questions), "questions": questions}
