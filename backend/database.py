@@ -22,12 +22,10 @@ load_dotenv()
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 DB_NAME = os.getenv("DB_NAME", "quiz_generator")
 
-# Fix for Python 3.13 SSL issue
 client = MongoClient(
     MONGODB_URI,
     tls=True,
     tlsCAFile=certifi.where(),
-    tlsAllowInvalidCertificates=True,
     serverSelectionTimeoutMS=5000
 )
 
@@ -79,7 +77,6 @@ def get_or_create_user(clerk_id: str, user_data: dict = None) -> dict:
 
 
 def update_user(clerk_id: str, update_data: dict):
-    """Update user document"""
     users_collection.update_one(
         {"clerk_id": clerk_id},
         {"$set": update_data}

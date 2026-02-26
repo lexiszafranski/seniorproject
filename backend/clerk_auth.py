@@ -1,15 +1,13 @@
 """
 CLERK TOKEN VERIFICATION
-- When user logs in on frontend, Clerk gives them a JWT token
-- Frontend sends that token to backend with every request
-- This file decodes that token to get the user's ID
-- JWT tokens have 3 parts separated by dots: header.payload.signature
-- Decode the payload  to get user info, can only be tested once frontend doneso
+- Decodes JWT token to get user ID
+- Fetches full user info from Clerk API
 """
 
 import os
 import base64
 import json
+import httpx
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -21,6 +19,7 @@ async def verify_clerk_token(token: str) -> dict:
     if not CLERK_SECRET_KEY:
         raise ValueError("CLERK_SECRET_KEY not in .env")
     
+    # Decode token to get user ID
     parts = token.split(".")
     if len(parts) != 3:
         raise ValueError("Invalid token")
@@ -30,10 +29,26 @@ async def verify_clerk_token(token: str) -> dict:
     decoded = base64.urlsafe_b64decode(payload)
     data = json.loads(decoded)
     
-    # Return all useful fields
-    return {
-        "sub": data.get("sub"),
-        "email": data.get("email"),
-        "first_name": data.get("first_name"),
-        "last_name": data.get("last_name")
-    }
+    user_id = data.get("sub")
+    
+    # Fetch full user info from Clerk API
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.clerk.com/v1/users/{user_id}",
+            headers={
+                "Authorization": f"Bearer {CLERK_SECRET_KEY}",
+                "Content-Type": "application/json"
+            }
+        )
+        
+        if response.status_code == 200:
+            clerk_user = response.json()
+            return {
+                "sub": user_id,
+                "email": clerk_user.get("email_addresses", [{}])[0].get("email_address"),
+                "first_name": clerk_user.get("first_name"),
+                "last_name": clerk_user.get("last_name")
+            }
+        else:
+            # Fallback to just the user ID
+            return {"sub": user_id, "email": None, "first_name": None, "last_name": None}

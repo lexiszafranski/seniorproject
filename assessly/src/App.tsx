@@ -1,10 +1,30 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { SignedIn, SignedOut } from '@clerk/clerk-react';
+import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
+import { useEffect } from 'react';
 import './styles/App.css';
 import Dashboard from './pages/dashboard';
 import Login from './pages/login';
 
 function App() {
+   const { getToken, isSignedIn } = useAuth();
+  // Automatically sync user to backend when logged in
+  useEffect(() => {
+    async function syncUser() {
+      if (isSignedIn) {
+        try {
+          const token = await getToken();
+          await fetch('http://localhost:8000/api/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          console.log('User synced to backend');
+        } catch (error) {
+          console.error('Failed to sync user:', error);
+        }
+      }
+    }
+    syncUser();
+  }, [isSignedIn, getToken]);
+
   return (
     <BrowserRouter>
       <Routes>
