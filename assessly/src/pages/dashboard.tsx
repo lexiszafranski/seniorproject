@@ -1,6 +1,7 @@
 import { useUser } from '@clerk/clerk-react';
 import '../styles/dashboard.css';
 import ufImg from '../assets/ufimg.png';
+import cardImg from '../assets/cardimg.jpg';
 
 function Dashboard() {
   const { user } = useUser();
@@ -24,14 +25,14 @@ function Dashboard() {
           <h2 className="section-heading">Published</h2>
           <div className="cards">
             <article className="card">
-              <div className="card-top" />
-              <span className="card-date">1/25/26</span>
+              <img src={cardImg} alt="Practice Quiz 1" className="card-image" />
               <h3 className="card-title">Practice Quiz 1: More Sorting</h3>
+              <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#666' }}>10 questions • 4 question groups</p>
             </article>
             <article className="card">
-              <div className="card-top" />
-              <span className="card-date">1/30/26</span>
+              <img src={cardImg} alt="Practice Quiz 2" className="card-image" />
               <h3 className="card-title">Practice Quiz 2: More List, Stacks, Queues</h3>
+              <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#666' }}>8 questions • 2 question groups</p>
             </article>
           </div>
         </section>
@@ -40,8 +41,7 @@ function Dashboard() {
           <h2 className="section-heading">Drafts</h2>
           <div className="cards">
             <article className="card">
-              <div className="card-top" />
-              <span className="card-date">—</span>
+              <img src={cardImg} alt="Draft quiz" className="card-image" />
               <h3 className="card-title">Draft quiz</h3>
             </article>
           </div>
