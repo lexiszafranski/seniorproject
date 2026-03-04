@@ -1,32 +1,59 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import './styles/App.css';
 import Dashboard from './pages/dashboard';
 import Login from './pages/login';
 import AddCourses from './pages/addCourses';
 import Tokens from './pages/tokens';
 
-
 function App() {
-   const { getToken, isSignedIn } = useAuth();
-  // Automatically sync user to backend when logged in
+  const { getToken, isSignedIn } = useAuth();
+  const [hasCanvasToken, setHasCanvasToken] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Check for canvas token and sync user
   useEffect(() => {
-    async function syncUser() {
-      if (isSignedIn) {
-        try {
-          const token = await getToken();
-          await fetch('http://localhost:8000/api/me', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          console.log('User synced to backend');
-        } catch (error) {
-          console.error('Failed to sync user:', error);
+    async function syncUserAndCheckToken() {
+      if (!isSignedIn) {
+        setHasCanvasToken(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const token = await getToken();
+        const response = await fetch('http://localhost:8000/api/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+          if (hasCanvasToken !== true) setHasCanvasToken(false);
+          return;
         }
+
+        const userData = await response.json();
+        console.log("User Data:", userData);
+
+        const serverHasToken = !!userData.canvas_token;
+
+        if (hasCanvasToken === true && !serverHasToken) return;
+
+        setHasCanvasToken(serverHasToken);
+
+      } catch (error) {
+        console.error('Failed to sync user:', error);
+        if (hasCanvasToken !== true) setHasCanvasToken(false);
+      } finally {
+        setLoading(false);
       }
     }
-    syncUser();
-  }, [isSignedIn, getToken]);
+
+    syncUserAndCheckToken();
+  }, [isSignedIn, getToken, refreshTrigger, hasCanvasToken]);
+
+  if (loading) return <div>Loading...</div>;
 
   return (
     <BrowserRouter>
@@ -36,44 +63,70 @@ function App() {
         <Route
           path="/login"
           element={
-            <>
-              <SignedOut>
-                <Login />
-              </SignedOut>
-
-              {/* If already signed in, skip login */}
-              <SignedIn>
-                <Navigate to="/dashboard" replace />
-              </SignedIn>
-            </>
+            <SignedOut>
+              <Login />
+            </SignedOut>
           }
         />
 
-        {/* Dashboard Route */}
+        {/* If already signed in, skip login */}
+        <Route
+          path="/tokens"
+          element={
+            <SignedIn>
+              {hasCanvasToken ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <Tokens
+                  onTokensSaved={() => {
+                    setHasCanvasToken(true); 
+                  }}
+                />
+              )}
+            </SignedIn>
+          }
+        />
+
+         {/* Dashboard Route */}
         <Route
           path="/dashboard"
           element={
-            <>
-              <SignedIn>
+            <SignedIn>
+              {hasCanvasToken === null ? (
+                <div>Loading...</div>
+              ) : hasCanvasToken ? (
                 <Dashboard />
-              </SignedIn>
+              ) : (
+                <Navigate to="/tokens" replace />
+              )}
+            </SignedIn>
+          }
+        />
 
-              {/* If not signed in, go to login */}
+         {/* If not signed in, go to login */}
+        <Route
+          path="/"
+          element={
+            <>
               <SignedOut>
                 <Navigate to="/login" replace />
               </SignedOut>
+
+              <SignedIn>
+                {hasCanvasToken === null ? (
+                  <div>Loading...</div>
+                ) : (
+                  <Navigate to={hasCanvasToken ? "/dashboard" : "/tokens"} replace />
+                )}
+              </SignedIn>
             </>
           }
         />
 
-        {/* Root login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/add-courses" element={<AddCourses />} />
 
-        {/* Anything else = login */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
 
-        <Route path="/tokens" element={<Tokens />} /> 
-        <Route path="/add-courses" element={<AddCourses />} /> 
       </Routes>
     </BrowserRouter>
   );

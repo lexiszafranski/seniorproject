@@ -14,7 +14,7 @@ MAIN API SERVER - MongoDB Version
 
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
 import os
 from dotenv import load_dotenv
 from database import get_or_create_user, update_user, users_collection, init_db, user_has_tokens
@@ -36,8 +36,11 @@ app.add_middleware(
 
 # Request models
 class TokensRequest(BaseModel):
-    canvas_token: str
-    navigator_token: str
+    model_config = ConfigDict(populate_by_name=True)
+    
+    canvas_token: str = Field(alias="canvasToken")
+    navigator_token: str = Field(alias="navigatorToken")
+    
 
 
 async def get_current_user(authorization: str = Header(...)) -> dict:
@@ -101,10 +104,13 @@ async def save_tokens(
     # TODO: Verify Navigator token when we have Navigator API
     
     # Save tokens
-    update_user(current_user["clerk_id"], {
-        "canvas_token": tokens.canvas_token,
-        "navigator_token": tokens.navigator_token
-    })
+    try:
+        update_user(current_user["clerk_id"], {
+            "canvas_token": tokens.canvas_token,
+            "navigator_token": tokens.navigator_token
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save tokens: {str(e)}")
     
     return {
         "message": "Tokens saved successfully",
