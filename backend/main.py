@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 from database import get_or_create_user, update_user, users_collection, init_db, user_has_tokens
 from clerk_auth import verify_clerk_token
 from canvas_retriever import CanvasContentRetriever
+from gemini_retriever import generate_quiz_from_files
 
 load_dotenv()
 
@@ -61,6 +62,15 @@ async def verify_gemini_token(api_key: str) -> bool:
             raise ValueError("Gemini API key is invalid or has been revoked")
         else:
             raise ValueError(f"Failed to verify Gemini API key: {response.status_code}")
+
+
+class FileInfo(BaseModel):
+    url: str
+    display_name: str
+    content_type: str = "application/pdf"
+
+class GenerateQuizRequest(BaseModel):
+    files: list[FileInfo]
 
 
 async def get_current_user(authorization: str = Header(...)) -> dict:
@@ -317,3 +327,36 @@ async def retrieve_quiz_questions(course_id: int, quiz_id: int, current_user: di
         raise HTTPException(status_code=502, detail=f"Failed to fetch quiz questions from Canvas: {str(e)}")
 
     return {"question_count": len(questions), "questions": questions}
+
+
+"""
+Generates a practice quiz from a list of Canvas file URLs using Gemini.
+Pass in files retrieved from /api/courses/{course_id}/files.
+Returns 5 multiple-choice questions with options, answer, and rationale.
+Example request body:
+{
+  "files": [
+    {
+      "url": "https://ufl.instructure.com/files/123/download?...",
+      "display_name": "lecture1.pdf",
+      "content_type": "application/pdf"
+    }
+  ]
+}
+"""
+@app.post("/api/generate-quiz")
+async def generate_quiz(body: GenerateQuizRequest, current_user: dict = Depends(get_current_user)):
+    canvas_token = current_user.get("canvas_token") or os.getenv("CANVAS_TOKEN")
+    if not canvas_token:
+        raise HTTPException(status_code=400, detail="No Canvas token found. Please add your Canvas API token.")
+
+    files = [f.model_dump() for f in body.files]
+
+    try:
+        quiz = generate_quiz_from_files(files, canvas_token)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    return quiz

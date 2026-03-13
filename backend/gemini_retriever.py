@@ -10,7 +10,7 @@ load_dotenv()
 
 client = genai.Client(api_key=os.getenv("GEMINI_KEY"))
 
-QUIZ_PROMPT = """You are an expert educator and quiz creator. For each of the provided course materials, create exactly 2 challenging multiple-choice practice quiz questions that test deep understanding of the content.
+QUIZ_PROMPT = """You are an expert educator and quiz creator. From all of the provided course materials combined, create exactly 5 challenging multiple-choice practice quiz questions that test deep understanding of the most important concepts.
 
 Return ONLY a valid JSON object with no extra text, markdown code fences, or explanation. Use this exact format:
 
@@ -31,7 +31,7 @@ Return ONLY a valid JSON object with no extra text, markdown code fences, or exp
 }
 
 Rules:
-- Exactly 2 questions per course material
+- Exactly 5 questions total across all provided materials
 - Each question must have exactly 4 options (A, B, C, D)
 - The answer field must be a single letter matching one of the option keys
 - Questions should be substantive and require understanding, not just recall
@@ -103,7 +103,8 @@ def generate_quiz_from_files(files: list, canvas_token: str) -> dict:
         try:
             gemini_response = client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=contents
+                contents=contents,
+                config={"response_mime_type": "application/json"}
             )
         except Exception as e:
             raise RuntimeError(f"Gemini content generation failed: {str(e)}")
@@ -140,20 +141,20 @@ def generate_quiz_from_files(files: list, canvas_token: str) -> dict:
                 pass
 
 
-# if __name__ == "__main__":
-#     import os
-#     test_files = [
-#         {
-#             "url": "https://ufl.instructure.com/files/63265314/download?download_frd=1&verifier=th6QWGRXtjNiourZyexyOM2FX2n8lDFRmqNXYCy9",
-#             "display_name": "0_Introduction_and_CourseOverview.pdf",
-#             "content_type": "application/pdf"
-#         }
-#         # {
-#         #     "url": "https://ufl.instructure.com/files/103763467/download?download_frd=1&verifier=OnPPgAaoTvQDyr0GUP7Vhm0CsxuCFK34koEHkg1w",
-#         #     "display_name": "c_review.pdf",
-#         #     "content_type": "application/pdf"
-#         # }
-#     ]
-#     result = generate_quiz_from_files(test_files, os.getenv("CANVAS_TOKEN"))
-#     print("\n--- GENERATED QUIZ ---")
-#     print(json.dumps(result, indent=2))
+if __name__ == "__main__":
+    import os
+    test_files = [
+        {
+            "url": "https://ufl.instructure.com/files/105079458/download?download_frd=1&verifier=fLAcntrkIOwpDeBbldHFSg8D8lcnWTz2zWt0Ffns",
+            "display_name": "1 - Algorithmic Analysis.pdf",
+            "content_type": "application/pdf"
+        }
+        # {
+        #     "url": "https://ufl.instructure.com/files/103763467/download?download_frd=1&verifier=OnPPgAaoTvQDyr0GUP7Vhm0CsxuCFK34koEHkg1w",
+        #     "display_name": "c_review.pdf",
+        #     "content_type": "application/pdf"
+        # }
+    ]
+    result = generate_quiz_from_files(test_files, os.getenv("CANVAS_TOKEN"))
+    print("\n--- GENERATED QUIZ ---")
+    print(json.dumps(result, indent=2))

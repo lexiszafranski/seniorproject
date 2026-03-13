@@ -4,10 +4,16 @@
 # fastapi = web framework that creates the API
 # uvicorn = server that runs FastAPI
 # python-dotenv = reads .env file for secrets
-# sqlalchemy = talks to database
+# pymongo = MongoDB driver
+# httpx = async HTTP client (Canvas file downloads, Clerk auth)
+# google-genai = Gemini AI SDK
+# certifi = SSL certificates for MongoDB connection
+# requests = HTTP client used by canvas_retriever
 fastapi==0.109.0
 uvicorn==0.27.0
 python-dotenv==1.0.0
-sqlalchemy==2.0.36
 requests==2.31.0
 pymongo==4.6.1
+httpx
+google-genai
+certifi

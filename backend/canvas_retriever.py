@@ -219,13 +219,17 @@ if __name__ == "__main__":
         # print(courses[0])
 
         course_id = 389226
-        # # Get all files from Aman's sandbox coursex
-        # files = canvas.get_course_files(course_id)
+        # Get all files from Aman's sandbox coursex
+        files = canvas.get_course_files(course_id)
         # print(f"\nFiles ({len(files)}):")
         # for file in files:
         #     print(f"  - {file['display_name']} (ID: {file['id']}, Type: {file.get('mime_class', 'unknown')})")
         #     # print(f"    URL: {file['url']}")
         #     print(f"    Updated: {file['updated_at']}")
+
+        for file in files:
+            if file['display_name'] == "1 - Algorithmic Analysis.pdf":
+                print(file['url'])
         
         # # Get all quizzes
         # quizzes = canvas.get_course_quizzes(course_id)
@@ -233,14 +237,14 @@ if __name__ == "__main__":
         # for quiz in quizzes:
         #     print(f"  - {quiz['title']} (ID: {quiz['id']}, Questions: {quiz.get('question_count', 0)})")
 
-        # Print questions and answers from Conceptual Quiz 2
-        quiz_id = 1580714
-        print(f"\n{'='*60}")
-        print("Questions from Conceptual Quiz 2")
-        print(f"{'='*60}")
+        # # Print questions and answers from Conceptual Quiz 2
+        # quiz_id = 1580714
+        # print(f"\n{'='*60}")
+        # print("Questions from Conceptual Quiz 2")
+        # print(f"{'='*60}")
 
-        questions = canvas.get_quiz_questions(course_id, quiz_id)
-        print(questions[0])  # Print the first question for reference
+        # questions = canvas.get_quiz_questions(course_id, quiz_id)
+        # print(questions[0])  # Print the first question for reference
         # for i, question in enumerate(questions, 1):
         #     print(f"\nQuestion {i}: {question.get('question_name', 'Untitled')}")
         #     print(f"  {question.get('question_text', 'No question text')}")
