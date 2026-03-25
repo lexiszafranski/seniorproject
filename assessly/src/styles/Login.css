@@ -41,6 +41,14 @@
     align-items: center;
     justify-content: center;
 }
+.inputLogin {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    gap: 1rem;
+    color: #000000
+}
 .input {
     display: flex;
     flex-direction: column;
