@@ -9,7 +9,7 @@ function Login() {
         <div className="image-container">
           <img src={loginImg} className="login-img" alt="Login Image"/>
         </div>
-        <div className="input">
+        <div className="inputLogin">
           <div className="close-container">
             <h1 className="main-title">WELCOME TO ASSESSLY</h1>
             <p className="sub-title">Generate practice quizzes from course content</p>
