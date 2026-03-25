@@ -128,6 +128,7 @@ function QuizStructure() {
         console.log("Number of Questions to Generate: ", questionNum);
         console.log("Enable Image Generation: ", enableImageGeneration);
         console.log("Additional Prompting Notes: ", additionalNotes);
+        navigate('/quiz-review');
     }   
 
     function getQuizQuestionContent() {

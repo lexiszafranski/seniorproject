@@ -7,6 +7,7 @@ import Login from './pages/login';
 import AddCourses from './pages/addCourses';
 import Tokens from './pages/tokens';
 import QuizStructure from './pages/quizStructure';
+import QuizReview from './pages/quizReview';
 
 function App() {
   const { getToken, isSignedIn } = useAuth();
@@ -126,7 +127,8 @@ function App() {
 
         <Route path="/add-courses" element={<AddCourses />} />
         <Route path="/quiz-structure" element={<QuizStructure />} />
-
+        <Route path="/quiz-review" element={<QuizReview />} />
+        <Route path="/dashboardtest" element={<Dashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
