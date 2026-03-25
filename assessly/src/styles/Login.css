@@ -69,6 +69,7 @@
     align-self: stretch;
     border-radius: 50px;
     background: #000;
+    color: #fff;
 }
 .registration-container {
     display: flex;
@@ -82,7 +83,7 @@
     color: #54A841;
     font-weight: 400;
 }
-input[type="checkbox"] {
+.login input[type="checkbox"] {
     appearance:none; 
     -webkit-appearance: none;
 } 

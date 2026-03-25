@@ -111,14 +111,183 @@
     align-self: flex-end;
     background-color: #000000;
     border-radius: 50px;
+    color: #FFFFFF;
 }
 .button-back {
-    /* align-self: flex-start; */
     background-color: #F7FAF5;
     border-radius: 50px;
     border-color: #000000;
     border-width: 2px;
     color: #000000;
+}
+.quizCheckbox {
+    display: flex;
+	width: 30px;
+	height: 30px;
+	border: 2px solid #C0C0C0;
+	border-radius: 5px;
+	appearance:none;
+}
+.quizCheckbox:checked {
+    display: flex;
+	width: 30px;
+	height: 30px;
+	border: 2px solid #000000;
+	border-radius: 5px;
+	appearance:none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3C!--!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com Copyright 2024 Fonticons, Inc.--%3E%3Cpath fill='%23000000' d='M470.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L192 338.7 425.4 105.4c12.5-12.5 32.8-12.5 45.3 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+	background-size: 20px 20px;
+}
+.quizFileOption {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+}
+.quizQuestionContainer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+    width: 100%;
+}
+.quizQuestionContainerToggle {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.quizQuestionContainerToggle p {
+    margin: 0;
+}
+.quizInputText {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    appearance: none;
+    padding: 10px;
+    border: 1px solid #C0C0C0;
+    border-radius: 5px;
+}
+
+.toggleSwitch {
+    position: relative;
+    display: inline-block;
+    width: 62px;
+    height: 34px;
+}
+
+.toggleSwitch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #d9d9d7;
+    border: 1px solid #d0d0ce;
+    border-radius: 999px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 30px;
+    width: 30px;
+    left: 2px;
+    top: 1px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s ease;
+}
+
+.toggleSwitch input:checked + .slider {
+    background-color: #468278;
+    border-color: #468278;
+}
+
+.toggleSwitch input:checked + .slider:before {
+    transform: translateX(28px);
+}
+
+.dropdown-main {
+    appearance: none;
+    border: 1px solid #b7b7b7;
+    border-radius: 12px;
+    background-color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    font-family: "Red Hat Display", sans-serif;
+    font-weight: 500;
+    color: #222222;
+}
+
+.dropdown {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+    width: 100%;
+}
+
+.dropdown-options {
+    border: 1px solid #b7b7b7;
+    border-radius: 12px;
+    background-color: #ffffff;
+    padding: 16px 20px 10px;
+}
+
+.dropdown-options .quizFileOption {
+    font-family: "Red Hat Display", sans-serif;
+    color: #222222;
+    margin-bottom: 12px;
+}
+
+.dropdown-title {
+    display: inline-block;
+    line-height: 1.1;
+}
+
+.dropdown-chevron {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #000000;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.dropdown-chevron::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    border-right: 3px solid #ffffff;
+    border-bottom: 3px solid #ffffff;
+    transform: translate(-50%, -62%) rotate(45deg);
+    transition: transform 0.2s ease;
+}
+
+.dropdown-main.open .dropdown-chevron::before {
+    transform: translate(-50%, -38%) rotate(-135deg);
 }
 
 @media (max-width: 992px) {

@@ -84,6 +84,19 @@ export const mockFilesResponse = {
       "updated_at": "2021-10-20T16:41:21Z",
       "modified_at": "2021-01-12T22:15:59Z",
       "mime_class": "pdf"
+    },
+    {
+      "id": 63265315,
+      "folder_id": 6794316,
+      "display_name": "0_Introduction_and_CourseOverview.pdf",
+      "filename": "0_Introduction_and_CourseOverview.pdf",
+      "content-type": "application/pdf",
+      "url": "https://ufl.instructure.com/files/63265314/download?download_frd=1&verifier=th6QWGRXtjNiourZyexyOM2FX2n8lDFRmqNXYCy9",
+      "size": 1887556,
+      "created_at": "2021-01-12T22:15:59Z",
+      "updated_at": "2021-10-20T16:41:21Z",
+      "modified_at": "2021-01-12T22:15:59Z",
+      "mime_class": "pdf"
     }
   ]
 };
