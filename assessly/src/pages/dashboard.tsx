@@ -14,36 +14,57 @@ function Dashboard() {
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   
   useEffect(() => {
-    async function loadCoursesAndQuizzes() {
-      setLoading(true);
-      try {
-        // Fetch courses
-        const data = await api.syncCourses();
-        setCourses(data.courses);
-        console.log("Courses:", data.courses)
-        
-        // Fetch quizzes for each course
+  async function loadCoursesAndQuizzes() {
+    setLoading(true);
+    try {
+      // Fetch courses
+      const data = await api.syncCourses();
+      console.log("All Courses:", data.courses);
+      
+      // Filter to only Teacher/TA courses
+      const teacherCourses = data.courses.filter((course: any) => {
+        const validRoles = ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment'];
+        return course.enrollments?.some((enrollment: any) => 
+          validRoles.includes(enrollment.role)
+        );
+      });
+      
+      console.log("Teacher/TA Courses:", teacherCourses);
+      setCourses(teacherCourses);
+      
+      // Only fetch quizzes for Teacher/TA courses
+      if (teacherCourses.length > 0) {
         const coursesData = await Promise.all(
-          data.courses.map(async (course: any) => {
-            const quizzesData = await api.getQuizzes(course.id);
-            return {
-              ...course,
-              quiz_count: quizzesData.quiz_count,
-              quizzes: quizzesData.quizzes
-            };
+          teacherCourses.map(async (course: any) => {
+            try {
+              const quizzesData = await api.getQuizzes(course.id);
+              return {
+                ...course,
+                quiz_count: quizzesData.quiz_count,
+                quizzes: quizzesData.quizzes
+              };
+            } catch (error) {
+              console.error(`Error fetching quizzes for ${course.name}:`, error);
+              return {
+                ...course,
+                quiz_count: 0,
+                quizzes: []
+              };
+            }
           })
         );
-        
         setCoursesWithQuizzes(coursesData);
-        console.log("Courses with quizzes:", coursesData)
-      } catch (error) {
-        console.error("Error loading courses:", error);
-      } finally {
-        setLoading(false);
+      } else {
+        setCoursesWithQuizzes([]);
       }
+    } catch (error) {
+      console.error("Error loading courses:", error);
+    } finally {
+      setLoading(false);
     }
-    loadCoursesAndQuizzes();
-  }, []);
+  }
+  loadCoursesAndQuizzes();
+}, []);
   
   return (
     <div className="dashboard">
