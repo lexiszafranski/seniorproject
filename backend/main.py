@@ -350,12 +350,17 @@ async def generate_quiz(body: GenerateQuizRequest, current_user: dict = Depends(
     if not canvas_token:
         raise HTTPException(status_code=400, detail="No Canvas token found. Please add your Canvas API token.")
 
+    gemini_token = current_user.get("gemini_token") or os.getenv("GEMINI_KEY")
+    if not gemini_token:
+        raise HTTPException(status_code=400, detail="No Gemini API key found. Please add your Gemini API key.")
+
     files = [f.model_dump() for f in body.files]
 
     try:
-        quiz = generate_quiz_from_files(files, canvas_token)
+        quiz = generate_quiz_from_files(files, canvas_token, gemini_token)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+        print(gemini_token)
     except RuntimeError as e:
         raise HTTPException(status_code=502, detail=str(e))
 

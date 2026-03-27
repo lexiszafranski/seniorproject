@@ -1,4 +1,5 @@
 import { useUser, useAuth } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/dashboard.css';
 import ufImg from '../assets/ufimg.png';
 import cardImg from '../assets/cardimg.jpg';
@@ -8,63 +9,64 @@ import { api } from "../config/api";
 function Dashboard() {
   const { user } = useUser();
   const { getToken, isSignedIn } = useAuth();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState<any[]>([]);
   const [coursesWithQuizzes, setCoursesWithQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   
   useEffect(() => {
-  async function loadCoursesAndQuizzes() {
-    setLoading(true);
-    try {
-      // Fetch courses
-      const data = await api.syncCourses();
-      console.log("All Courses:", data.courses);
-      
-      // Filter to only Teacher/TA courses
-      const teacherCourses = data.courses.filter((course: any) => {
-        const validRoles = ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment'];
-        return course.enrollments?.some((enrollment: any) => 
-          validRoles.includes(enrollment.role)
-        );
-      });
-      
-      console.log("Teacher/TA Courses:", teacherCourses);
-      setCourses(teacherCourses);
-      
-      // Only fetch quizzes for Teacher/TA courses
-      if (teacherCourses.length > 0) {
-        const coursesData = await Promise.all(
-          teacherCourses.map(async (course: any) => {
-            try {
-              const quizzesData = await api.getQuizzes(course.id);
-              return {
-                ...course,
-                quiz_count: quizzesData.quiz_count,
-                quizzes: quizzesData.quizzes
-              };
-            } catch (error) {
-              console.error(`Error fetching quizzes for ${course.name}:`, error);
-              return {
-                ...course,
-                quiz_count: 0,
-                quizzes: []
-              };
-            }
-          })
-        );
-        setCoursesWithQuizzes(coursesData);
-      } else {
-        setCoursesWithQuizzes([]);
+    async function loadCoursesAndQuizzes() {
+      setLoading(true);
+      try {
+        // Fetch courses
+        const data = await api.syncCourses();
+        console.log("All Courses:", data.courses);
+        
+        // Filter to only Teacher/TA courses
+        const teacherCourses = data.courses.filter((course: any) => {
+          const validRoles = ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment'];
+          return course.enrollments?.some((enrollment: any) => 
+            validRoles.includes(enrollment.role)
+          );
+        });
+        
+        console.log("Teacher/TA Courses:", teacherCourses);
+        setCourses(teacherCourses);
+        
+        // Only fetch quizzes for Teacher/TA courses
+        if (teacherCourses.length > 0) {
+          const coursesData = await Promise.all(
+            teacherCourses.map(async (course: any) => {
+              try {
+                const quizzesData = await api.getQuizzes(course.id);
+                return {
+                  ...course,
+                  quiz_count: quizzesData.quiz_count,
+                  quizzes: quizzesData.quizzes
+                };
+              } catch (error) {
+                console.error(`Error fetching quizzes for ${course.name}:`, error);
+                return {
+                  ...course,
+                  quiz_count: 0,
+                  quizzes: []
+                };
+              }
+            })
+          );
+          setCoursesWithQuizzes(coursesData);
+        } else {
+          setCoursesWithQuizzes([]);
+        }
+      } catch (error) {
+        console.error("Error loading courses:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading courses:", error);
-    } finally {
-      setLoading(false);
     }
-  }
-  loadCoursesAndQuizzes();
-}, []);
+    loadCoursesAndQuizzes();
+  }, []);
   
   return (
     <div className="dashboard">
@@ -74,7 +76,13 @@ function Dashboard() {
         </div>
         <h1 className="header-welcome">WELCOME BACK, {user?.firstName?.toUpperCase() || 'User'}!</h1>
         <div className="header-actions">
-          <button type="button" className="btn-new-quiz">New Quiz</button>
+          <button 
+            type="button" 
+            className="btn-new-quiz"
+            onClick={() => navigate('/quiz-structure')}
+          >
+            New Quiz
+          </button>
           <div className="header-avatar" />
         </div>
       </header>

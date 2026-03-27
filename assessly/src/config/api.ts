@@ -64,4 +64,18 @@ export const api = {
     }
     return response.json();
   },
+
+generateQuiz: async (files: { url: string; display_name: string; content_type: string }[]) => {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE}/api/generate-quiz`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ files })
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to generate quiz');
+    }
+    return response.json();
+  },
 };

@@ -37,7 +37,7 @@ function App() {
         const userData = await response.json();
         console.log("User Data:", userData);
 
-        const serverHasToken = !!userData.canvas_token;
+        const serverHasToken = userData.has_canvas_token && userData.has_gemini_token;
 
         if (hasCanvasToken === true && !serverHasToken) return;
 
@@ -104,6 +104,38 @@ function App() {
           }
         />
 
+        {/* Quiz Structure Route */}
+        <Route
+          path="/quiz-structure"
+          element={
+            <SignedIn>
+              {hasCanvasToken === null ? (
+                <div>Loading...</div>
+              ) : hasCanvasToken ? (
+                <QuizStructure />
+              ) : (
+                <Navigate to="/tokens" replace />
+              )}
+            </SignedIn>
+          }
+        />
+
+        {/* Add Courses Route */}
+        <Route
+          path="/add-courses"
+          element={
+            <SignedIn>
+              {hasCanvasToken === null ? (
+                <div>Loading...</div>
+              ) : hasCanvasToken ? (
+                <AddCourses />
+              ) : (
+                <Navigate to="/tokens" replace />
+              )}
+            </SignedIn>
+          }
+        />
+
          {/* If not signed in, go to login */}
         <Route
           path="/"
@@ -123,9 +155,6 @@ function App() {
             </>
           }
         />
-
-        <Route path="/add-courses" element={<AddCourses />} />
-        <Route path="/quiz-structure" element={<QuizStructure />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
 

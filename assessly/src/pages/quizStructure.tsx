@@ -9,21 +9,28 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../config/api';
 
-// import {ToggleButton} from './ToggleButton';
-
-
 function QuizStructure() {
-    const [courseId] = useState<number>(63265314);
+    // Course selection
+    const [courses, setCourses] = useState<any[]>([]);
+    const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
+    const [isLoadingCourses, setIsLoadingCourses] = useState(false);
+
     const [files, setFiles] = useState<any[]>([]);
     const [selectedFileIds, setSelectedFileIds] = useState<number[]>([]);
     const [isLoadingFiles, setIsLoadingFiles] = useState(false);
     const [filesError, setFilesError] = useState<string | null>(null);
     const [prevQuizzes, setPrevQuizzes] = useState<any[]>([]);
+    const [selectedQuizIds, setSelectedQuizIds] = useState<number[]>([]);
+
+    // Quiz generation state
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generatedQuiz, setGeneratedQuiz] = useState<any>(null);
+    const [generateError, setGenerateError] = useState<string | null>(null);
 
     //Canvas Quiz Attributes 
     const [title, setTitle] = useState("");
     const [assignment_group_id, setAssignmentGroupId] = useState<number[]>([]);
-    const [points_possible, setPointsPossible] = useState("");  //TODO: change to number when form submitted 
+    const [points_possible, setPointsPossible] = useState("");
     const [instructions, setInstructions] = useState("");
     const [multiple_attempts_enabled, setMultipleAttemptsEnabled] = useState(false);
     const [has_time_limit, setHasTimeLimit] = useState(false);
@@ -37,25 +44,52 @@ function QuizStructure() {
     const [enableImageGeneration, setEnableImageGeneration] = useState(false);
     const [additionalNotes, setAdditionalNotes] = useState("");
 
-    //TODO: Retrieve assignment group ids, DUMMY DATA
     const [userAssignmentGroupIds] = useState([{id: 1, name: "Quizzes"}, {id: 2, name: "Ungraded"}]);
 
     const structureQuestions = [
-    {id: 1, title: "Which course quizzes would you like the quiz to be based on?", },
-    {id: 2, title: "Which content would like to be included in the quiz?"},
-    {id: 3, title: "Canvas Quiz Structure"},
-    {id: 4, title: "AI Prompting"}
+        {id: 1, title: "Which course would you like to create a quiz for?"},
+        {id: 2, title: "Which course quizzes would you like the quiz to be based on?"},
+        {id: 3, title: "Which content would like to be included in the quiz?"},
+        {id: 4, title: "Canvas Quiz Structure"},
+        {id: 5, title: "AI Prompting"}
     ]
     const [index, setIndex] = useState(0);
     const navigate = useNavigate();
 
+    // Load courses on mount
     useEffect(() => {
+        async function loadCourses() {
+            setIsLoadingCourses(true);
+            try {
+                const data = await api.syncCourses();
+                
+                const teacherCourses = data.courses.filter((course: any) => {
+                    const validRoles = ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment'];
+                    return course.enrollments?.some((enrollment: any) => 
+                        validRoles.includes(enrollment.role)
+                    );
+                });
+                
+                setCourses(teacherCourses);
+            } catch (error) {
+                console.error('Failed to load courses:', error);
+            } finally {
+                setIsLoadingCourses(false);
+            }
+        }
+        loadCourses();
+    }, []);
+
+    // Load files and quizzes when course is selected
+    useEffect(() => {
+        if (!selectedCourseId) return;
+
         async function loadFiles() {
             setIsLoadingFiles(true);
             setFilesError(null);
 
             try {
-                const response = await api.getFiles(courseId);
+                const response = await api.getFiles(selectedCourseId);
                 setFiles(response?.files || []);
             } catch (error) {
                 console.error('Failed to load files:', error);
@@ -66,7 +100,7 @@ function QuizStructure() {
         }
         async function loadQuizzes() {
             try {
-                const response = await api.getQuizzes(courseId);
+                const response = await api.getQuizzes(selectedCourseId);
                 setPrevQuizzes(response?.quizzes || []);
             } catch (error) {
                 console.error('Failed to load quizzes:', error);
@@ -75,28 +109,41 @@ function QuizStructure() {
 
         loadFiles();
         loadQuizzes();
-    }, [courseId]);
+    }, [selectedCourseId]);
 
     function handleFileToggle(fileId: number) {
-        setSelectedFileIds((prevSelectedFileIds) => {
-            if (prevSelectedFileIds.includes(fileId)) {
-                return prevSelectedFileIds.filter((id) => id !== fileId);
+        setSelectedFileIds((prev) => {
+            if (prev.includes(fileId)) {
+                return prev.filter((id) => id !== fileId);
             }
-
-            return [...prevSelectedFileIds, fileId];
+            return [...prev, fileId];
         });
     }
 
-    function handleAssignmentGroup(fileId: number) {
-        setAssignmentGroupId((prevSelectedFileIds) => {
-            if (prevSelectedFileIds.includes(fileId)) {
-                return prevSelectedFileIds.filter((id) => id !== fileId);
+    function handleQuizToggle(quizId: number) {
+        setSelectedQuizIds((prev) => {
+            if (prev.includes(quizId)) {
+                return prev.filter((id) => id !== quizId);
             }
-            return [...prevSelectedFileIds, fileId];
+            return [...prev, quizId];
+        });
+    }
+
+    function handleAssignmentGroup(groupId: number) {
+        setAssignmentGroupId((prev) => {
+            if (prev.includes(groupId)) {
+                return prev.filter((id) => id !== groupId);
+            }
+            return [...prev, groupId];
         });
     }
 
     function incrementIndex() {
+        if (index === 0 && !selectedCourseId) {
+            alert('Please select a course first');
+            return;
+        }
+        
         setIndex((prevIndex) => {
             if (prevIndex >= structureQuestions.length - 1) {
                 return prevIndex;
@@ -114,26 +161,72 @@ function QuizStructure() {
         });
     }
 
-    function getFormResults() {
-        console.log("Selected Files: ", files);
-        console.log("Quiz Title: ", title);
-        console.log("Assignment Group ID: ", assignment_group_id);
-        console.log("Points Possible: ", points_possible);
-        console.log("Instructions: ", instructions);
-        console.log("Multiple Attempts Enabled: ", multiple_attempts_enabled);
-        console.log("Has Time Limit: ", has_time_limit);
-        console.log("Session Time Limit in Seconds: ", session_time_limit_in_seconds); 
-        console.log("Result View Restricted: ", result_view_restricted);
-        console.log("Display Results with Items: ", displayResultsWithItems);
-        console.log("Number of Questions to Generate: ", questionNum);
-        console.log("Enable Image Generation: ", enableImageGeneration);
-        console.log("Additional Prompting Notes: ", additionalNotes);
-    }   
+    async function handleSubmit() {
+        // Get selected files with their full info
+        const selectedFiles = files
+            .filter(file => selectedFileIds.includes(file.id))
+            .map(file => ({
+                url: file.url,
+                display_name: file.display_name,
+                content_type: file['content-type'] || 'application/pdf'
+            }));
+
+        if (selectedFiles.length === 0) {
+            alert('Please select at least one file to generate a quiz from');
+            return;
+        }
+
+        setIsGenerating(true);
+        setGenerateError(null);
+
+        try {
+            console.log("Generating quiz from files:", selectedFiles);
+            const result = await api.generateQuiz(selectedFiles);
+            console.log("Generated quiz:", result);
+            setGeneratedQuiz(result);
+            
+            // Navigate to results page or show success
+            alert(`Quiz generated successfully! ${result.questions?.length || 0} questions created.`);
+            navigate('/dashboard');
+        } catch (error: any) {
+            console.error('Failed to generate quiz:', error);
+            setGenerateError(error.message || 'Failed to generate quiz');
+            alert(`Error: ${error.message || 'Failed to generate quiz'}`);
+        } finally {
+            setIsGenerating(false);
+        }
+    }
 
     function getQuizQuestionContent() {
-        //Choose Canvas Quizzes 
+        // Step 0: Choose Course
         if (index === 0) {
-            
+            return (
+                <div>
+                    {isLoadingCourses && <p>Loading courses...</p>}
+                    
+                    {!isLoadingCourses && courses.length === 0 && (
+                        <p>No courses found where you are a Teacher or TA</p>
+                    )}
+
+                    {!isLoadingCourses && courses.length > 0 && (
+                        courses.map((course) => (
+                            <label key={course.id} className="quizFileOption">
+                                <input
+                                    type="radio"
+                                    name="courseSelection"
+                                    checked={selectedCourseId === course.id}
+                                    onChange={() => setSelectedCourseId(course.id)}
+                                    className="quizCheckbox"
+                                />
+                                {course.name}
+                            </label>
+                        ))
+                    )}
+                </div>
+            );
+        }
+        // Step 1: Choose Canvas Quizzes 
+        else if (index === 1) {
             return (
                 <div>
                     {prevQuizzes.length === 0 && (
@@ -145,8 +238,8 @@ function QuizStructure() {
                             <label key={quiz.id} className="quizFileOption">
                                 <input
                                     type="checkbox"
-                                    checked={selectedFileIds.includes(quiz.id)}
-                                    onChange={() => handleFileToggle(quiz.id)}
+                                    checked={selectedQuizIds.includes(quiz.id)}
+                                    onChange={() => handleQuizToggle(quiz.id)}
                                     className="quizCheckbox"
                                 />
                                 {quiz.title}
@@ -156,8 +249,8 @@ function QuizStructure() {
                 </div>
             );
         }
-        //Choose Canvas materials 
-        else if (index === 1) {
+        // Step 2: Choose Canvas materials 
+        else if (index === 2) {
             return (
                 <div>
                     {isLoadingFiles && <p>Loading Canvas files...</p>}
@@ -183,9 +276,7 @@ function QuizStructure() {
                 </div>
             );
         }
-        //Quiz Qualities 
-        else if (index === 2) {
-            /*
+        /*
             Canvas needs
 
             Course ID:                             course_id                                                         (int)
@@ -199,6 +290,8 @@ function QuizStructure() {
             Enable display results:                quiz[quiz_settings][result_view_settings][result_view_restricted] (boolean)
             Enable display items in results view:  quiz[quiz_settings][result_view_settings][display_items]          (boolean)   
             */
+        // Step 3: Quiz Qualities 
+        else if (index === 3) {
             return (
                 <div className="quizQuestionContainer" style={{ maxHeight: '25vh', overflowY: 'auto', overflowX: 'hidden' }}>
                     {/* Quiz Title */}
@@ -211,7 +304,6 @@ function QuizStructure() {
                         className="quizInputText"
                         />
                     </div>
-                    {/* TODO: Assignment group id */}
                     <div className="quizQuestionContainer">
                         <p>Assignment Group</p>
                         <div className="dropdown">
@@ -262,8 +354,8 @@ function QuizStructure() {
                         className="quizInputText"
                         />
                     </div>
-                    {/* Multiple attempt toggle */}
-                    <div className="quizQuestionContainerToggle">
+                   {/* Multiple attempt toggle */}
+                   <div className="quizQuestionContainerToggle">
                         <p>Enable Multiple Attempts</p>
                         <label className="toggleSwitch">
                             <input type="checkbox"
@@ -307,7 +399,7 @@ function QuizStructure() {
                             <span className="slider"></span>
                         </label>
                     </div>
-                    {/* Display results with items  */}
+                   {/* Display results with items  */}
                     <div className="quizQuestionContainerToggle">
                         <p>Display Results with Items</p>
                         <label className="toggleSwitch">
@@ -319,12 +411,11 @@ function QuizStructure() {
                         </label>
                     </div>
                 </div>
-
-            );
+ );
         }
-        //AI Prompt 
+        // Step 4: AI Prompt 
         else {
-            /*
+               /*
             API needs 
 
             - number of questions
@@ -334,7 +425,7 @@ function QuizStructure() {
             */
             return (
                 <div className="quizQuestionContainer" style={{ maxHeight: '25vh', overflowY: 'auto', overflowX: 'hidden' }}>
-                    {/* Quiz questions */}
+                     {/* Quiz questions */}
                     <div className="quizQuestionContainer">
                         <p>Number of Questions to Generate</p>
                         <input type="text" 
@@ -344,7 +435,7 @@ function QuizStructure() {
                         className="quizInputText"
                         />
                     </div>
-                    {/* Image generation toggle  */}
+                     {/* Image generation toggle  */}
                     <div className="quizQuestionContainerToggle">
                         <p>Enable Image Generation</p>
                         <label className="toggleSwitch">
@@ -355,7 +446,7 @@ function QuizStructure() {
                             <span className="slider"></span>
                         </label>
                     </div>
-                    {/* Additional prompting notes */}
+                     {/* Additional prompting notes */}
                     <div className="quizQuestionContainer">
                         <p>Additional prompting notes</p>
                         <input type="text" 
@@ -381,7 +472,13 @@ function QuizStructure() {
         <hr></hr>
         <div className="content">
             <div className="left">
-                <img src={backArrow} className="back-arrow" alt="Back button"/>
+                <img 
+                    src={backArrow} 
+                    className="back-arrow" 
+                    alt="Back button"
+                    onClick={() => navigate('/dashboard')}
+                    style={{ cursor: 'pointer' }}
+                />
                 <div className="image-container-white">
                     <img src={sideImg} className="quiz-img" alt="Quiz Structure Image"/>
                 </div>
@@ -394,7 +491,7 @@ function QuizStructure() {
                     <h3 className="question-text">{structureQuestions[index].title}</h3>
                     {getQuizQuestionContent()}
                     
-                    {/* For button displays: back and next */}
+                       {/* For button displays: back and next */}
                     {index === 0 ?
                         <div className="buttons" style={{display: "flex", justifyContent: "flex-end"}}>
                             <button className="button-next" onClick={() => incrementIndex()}>Next</button>
@@ -405,7 +502,13 @@ function QuizStructure() {
                             {index !== structureQuestions.length - 1 ?
                                 <button className="button-next" onClick={() => incrementIndex()}>Next</button>
                                 :
-                                <button className="button-next" onClick={() => getFormResults()}>Submit</button>
+                                <button 
+                                    className="button-next" 
+                                    onClick={() => handleSubmit()}
+                                    disabled={isGenerating}
+                                >
+                                    {isGenerating ? 'Generating...' : 'Submit'}
+                                </button>
                             }
                         </div>
                     }
