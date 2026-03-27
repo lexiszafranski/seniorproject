@@ -1,14 +1,12 @@
 import os
 import json
 import re
-from google import genai
+import google.generativeai as genai
 from dotenv import load_dotenv
 import httpx
 import io
 
 load_dotenv()
-
-client = genai.Client(api_key=os.getenv("GEMINI_KEY"))
 
 QUIZ_PROMPT = """You are an expert educator and quiz creator. From all of the provided course materials combined, create exactly 5 challenging multiple-choice practice quiz questions that test deep understanding of the most important concepts.
 
@@ -43,6 +41,7 @@ Rules:
     Args:
         files: List of dicts with keys: 'url', 'display_name', 'content_type'
         canvas_token: Canvas API token used to authenticate file downloads
+        gemini_token: Gemini API key for authentication
 
     Returns:
         Dict with 'questions' list, each containing: question, options, answer, rationale
@@ -51,9 +50,16 @@ Rules:
         ValueError: If files list is empty or a file entry is missing a URL
         RuntimeError: If any download, Gemini upload, or generation step fails
     """
-def generate_quiz_from_files(files: list, canvas_token: str) -> dict:
+def generate_quiz_from_files(files: list, canvas_token: str, gemini_token: str = None) -> dict:
     if not files:
         raise ValueError("At least one file is required to generate a quiz.")
+
+    # Configure Gemini with user's token or fall back to env variable
+    api_key = gemini_token or os.getenv("GEMINI_KEY")
+    if not api_key:
+        raise ValueError("No Gemini API key provided. Please add your Gemini API key in settings.")
+    
+    client = genai.Client(api_key=api_key)
 
     headers = {"Authorization": f"Bearer {canvas_token}"}
     uploaded_files = []
@@ -149,12 +155,7 @@ if __name__ == "__main__":
             "display_name": "1 - Algorithmic Analysis.pdf",
             "content_type": "application/pdf"
         }
-        # {
-        #     "url": "https://ufl.instructure.com/files/103763467/download?download_frd=1&verifier=OnPPgAaoTvQDyr0GUP7Vhm0CsxuCFK34koEHkg1w",
-        #     "display_name": "c_review.pdf",
-        #     "content_type": "application/pdf"
-        # }
     ]
-    result = generate_quiz_from_files(test_files, os.getenv("CANVAS_TOKEN"))
+    result = generate_quiz_from_files(test_files, os.getenv("CANVAS_TOKEN"), os.getenv("GEMINI_KEY"))
     print("\n--- GENERATED QUIZ ---")
     print(json.dumps(result, indent=2))
