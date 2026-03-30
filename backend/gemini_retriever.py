@@ -1,7 +1,7 @@
 import os
 import json
 import re
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 import httpx
 import io

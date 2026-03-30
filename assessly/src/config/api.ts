@@ -73,8 +73,12 @@ generateQuiz: async (files: { url: string; display_name: string; content_type: s
       body: JSON.stringify({ files })
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to generate quiz');
+      let detail = 'Failed to generate quiz';
+      try {
+        const error = await response.json();
+        detail = error.detail || detail;
+      } catch {}
+      throw new Error(detail);
     }
     return response.json();
   },
