@@ -26,21 +26,23 @@ class CanvasContentRetriever:
         response.raise_for_status()
         raw_courses = response.json()
 
+        valid_roles = {'TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment'}
+
         filtered_courses = []
         for course in raw_courses:
-            enrollments = []
-            for enrollment in course.get("enrollments", []):
-                enrollments.append({
-                    "role": enrollment.get("role"),
-                    "enrollment_state": enrollment.get("enrollment_state")
-                })
+            enrollments = course.get("enrollments", [])
+            roles = {e.get("role") for e in enrollments}
 
-            filtered_courses.append({
-                "id": course["id"],
-                "name": course.get("name"),
-                "course_code": course.get("course_code"),
-                "enrollments": enrollments
-            })
+            if roles & valid_roles:  # course has at least one valid role
+                filtered_courses.append({
+                    "id": course["id"],
+                    "name": course.get("name"),
+                    "course_code": course.get("course_code"),
+                    "enrollments": [
+                        {"role": e.get("role"), "enrollment_state": e.get("enrollment_state")}
+                        for e in enrollments
+                    ]
+                })
 
         return filtered_courses
     
