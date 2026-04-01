@@ -29,7 +29,65 @@
   gap: 1rem;
 }
 
+.btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  color: #000;
+  padding: 0.45rem 1rem;
+  font-family: "Red Hat Display", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-logout-icon {
+  position: relative;
+  display: inline-block;
+  width: 1rem;
+  height: 1.5rem;
+  border: 2px solid currentColor;
+  border-right: none;
+  border-radius: 2px 0 0 2px;
+  box-sizing: border-box;
+}
+
+.btn-logout-icon::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0.48rem;
+  width: 0.62rem;
+  height: 2px;
+  background: currentColor;
+  transform: translateY(-50%);
+}
+
+.btn-logout-icon::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 1.02rem;
+  width: 0.36rem;
+  height: 0.36rem;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  transform: translateY(-50%) rotate(45deg);
+}
+
 .btn-new-quiz {
+  background-color: #fff;
+  color: #000;
+  border: 1px solid #000;
+  border-radius: 100px;
+  padding: 0.6rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.btn-new-quiz:hover {
   background-color: #000;
   color: #fff;
   border: none;
@@ -40,11 +98,35 @@
   cursor: pointer;
 }
 
+.quiz-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  align-items: center;
+}
+
+.sub-nav {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  align-items: center;
+}
+
 .header-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid currentColor;
+  background: #000;
+  color: #fff;
+  font-family: "Red Hat Display", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
 }
 
 .separator {
@@ -69,6 +151,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
+  margin-bottom: 30px;
 }
 
 .card {
@@ -98,4 +181,48 @@
 .card-title {
   margin: 0;
   padding: 0;
+}
+
+.loading-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #2f5851;
+  font-family: "Red Hat Display", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.loading-dots {
+  display: inline-flex;
+  gap: 0.28rem;
+}
+
+.loading-dots span {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: #468278;
+  animation: loadingPulse 0.95s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+@keyframes loadingPulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

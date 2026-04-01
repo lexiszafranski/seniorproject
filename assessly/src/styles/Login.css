@@ -49,6 +49,12 @@
     gap: 1rem;
     color: #000000
 }
+
+.clerk-signin-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
 .input {
     display: flex;
     flex-direction: column;

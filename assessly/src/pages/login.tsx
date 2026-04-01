@@ -14,8 +14,9 @@ function Login() {
             <h1 className="main-title">WELCOME TO ASSESSLY</h1>
             <p className="sub-title">Generate practice quizzes from course content</p>
           </div>
-          
-          <SignIn routing="virtual" />
+          <div className="clerk-signin-wrap">
+            <SignIn routing="virtual" />
+          </div>
           
         </div>
       </div>

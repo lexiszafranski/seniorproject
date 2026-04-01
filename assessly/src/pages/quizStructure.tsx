@@ -1,6 +1,4 @@
-import sideImg from '../assets/Quiz_Structure_Graphic.png';
 import questionMark from '../assets/Question_Mark.png';
-import greenBackground from '../assets/Green_Box.png';
 import backArrow from '../assets/Caret_Left.png';
 
 import '../styles/quizStructure.css';
@@ -207,7 +205,15 @@ function QuizStructure() {
         if (index === 0) {
             return (
                 <div className="quizStepPanel">
-                    {isLoadingCourses && <p>Loading courses...</p>}
+                    {isLoadingCourses && 
+                    <div className="loading-status" role="status" aria-live="polite">
+                    <span className="loading-dots" aria-hidden="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </span>
+                    </div>
+                    }
                     
                     {!isLoadingCourses && courses.length === 0 && (
                         <p>No courses found where you are a Teacher or TA</p>
@@ -303,7 +309,15 @@ function QuizStructure() {
                         aria-label="Search materials"
                     /> */}
 
-                    {isLoadingFiles && <p>Loading Canvas files...</p>}
+                    {isLoadingFiles && 
+                        <div className="loading-status" role="status" aria-live="polite">
+                        <span className="loading-dots" aria-hidden="true">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </span>
+                        </div>
+                    }
                     {filesError && <p>{filesError}</p>}
 
                     {!isLoadingFiles && !filesError && files.length === 0 && (
@@ -348,7 +362,7 @@ function QuizStructure() {
         // Step 3: Quiz Qualities 
         else if (index === 3) {
             return (
-                <div className="quizQuestionContainer quizStepPanel">
+                <div className="quizQuestionContainer quizStepPanel quizStepMaterialsList"  style={{overflowY:"auto"}}>
                     {/* Quiz Title */}
                     <div className="quizQuestionContainer">
                         <p>Quiz Title</p>
