@@ -1,6 +1,6 @@
 import loginImg from '../assets/Login/Login_Image.png';
 import '../styles/Login.css';
-import React, {useState} from 'react';
+import {useState} from 'react';
 function AddCourses() {
     // Placeholder for courses, replace with actual data fetching logic
     const [courses, setCourses] = useState([

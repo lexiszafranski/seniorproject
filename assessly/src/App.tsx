@@ -13,7 +13,29 @@ function App() {
   const { getToken, isSignedIn } = useAuth();
   const [hasCanvasToken, setHasCanvasToken] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [refreshTrigger] = useState(0);
+
+  const loadingIndicator = (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        minHeight: '100vh',
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}
+    >
+      <div className="loading-status">
+        <span className="loading-dots" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </div>
+    </div>
+  );
 
   // Check for canvas token and sync user
   useEffect(() => {
@@ -55,7 +77,7 @@ function App() {
     syncUserAndCheckToken();
   }, [isSignedIn, getToken, refreshTrigger, hasCanvasToken]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return loadingIndicator;
 
   return (
     <BrowserRouter>
@@ -95,7 +117,7 @@ function App() {
           element={
             <SignedIn>
               {hasCanvasToken === null ? (
-                <div>Loading...</div>
+                loadingIndicator
               ) : hasCanvasToken ? (
                 <Dashboard />
               ) : (
@@ -111,7 +133,7 @@ function App() {
           element={
             <SignedIn>
               {hasCanvasToken === null ? (
-                <div>Loading...</div>
+                loadingIndicator
               ) : hasCanvasToken ? (
                 <QuizStructure />
               ) : (
@@ -127,7 +149,7 @@ function App() {
           element={
             <SignedIn>
               {hasCanvasToken === null ? (
-                <div>Loading...</div>
+                loadingIndicator
               ) : hasCanvasToken ? (
                 <AddCourses />
               ) : (
@@ -148,7 +170,7 @@ function App() {
 
               <SignedIn>
                 {hasCanvasToken === null ? (
-                  <div>Loading...</div>
+                  loadingIndicator
                 ) : (
                   <Navigate to={hasCanvasToken ? "/dashboard" : "/tokens"} replace />
                 )}

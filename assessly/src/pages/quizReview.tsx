@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import sideImg from '../assets/Quiz_Structure_Graphic.png';
 import questionMark from '../assets/Question_Mark.png';
-import greenBackground from '../assets/Green_Box.png';
 import backArrow from '../assets/Caret_Left.png';
 import { mockGeneratedQuizQuestions } from '../config/mockData';
 
@@ -78,12 +76,10 @@ function QuizReview() {
   return (
     <div className="page quiz-review-page">
       <div className="top-bar">
-        <h2 className="top-bar-text" onClick={() => navigate('/dashboard')}>
-          ASSESSLY
-        </h2>
-        <img src={questionMark} alt="Help button" className="top-bar-help" />
-      </div>
-      <hr />
+            <h2 className="top-bar-text" onClick={() => navigate('/dashboard')}>ASSESSLY</h2>
+            <img src={questionMark} alt="Help button" className="top-bar-help"/>
+        </div>
+        <hr></hr>
 
       <div className="content quiz-review-content">
         <div className="left quiz-review-left">
@@ -95,15 +91,9 @@ function QuizReview() {
           >
             <img src={backArrow} className="back-arrow" alt="" />
           </button>
-
-          <div className="image-container-white quiz-review-illustration">
-            <img src={sideImg} className="quiz-img" alt="Quiz review illustration" />
-          </div>
         </div>
 
-        <div className="questions-container quiz-review-stage">
-          <img src={greenBackground} className="green-background quiz-review-green-panel" alt="Green background" />
-
+        <div className="right">
           <div className="quiz-review-stage-actions">
             <button type="button" className="quiz-review-icon-button quiz-review-menu-button" aria-label="Open menu">
               <span></span>
@@ -119,10 +109,16 @@ function QuizReview() {
               <span className="quiz-review-checkmark" aria-hidden="true"></span>
             </button>
           </div>
-
+        <div className="questions-container quiz-review-stage">
           <div className="questions quiz-review-card">
             <div className="quiz-review-layout">
               <div className="quiz-review-progress" aria-label="Question navigation">
+                <button
+                    type="button"
+                    className="quiz-review-progress-item-temp"
+                    style = {{backgroundColor: "#468278"}}
+                  >
+                  </button>
                 {reviewQuestions.map((question, index) => (
                   <button
                     key={question.id}
@@ -228,6 +224,7 @@ function QuizReview() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
 

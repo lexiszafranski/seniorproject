@@ -404,12 +404,19 @@
 }
 
 .quiz-review-content {
-    gap: 2rem;
-    align-items: flex-start;
+    gap: 50px;
+    align-items: stretch;
+}
+
+.right {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 }
 
 .quiz-review-left {
-    min-width: 320px;
+    flex: 0 0 auto;
+    min-width: auto;
 }
 
 .review-back-nav {
@@ -428,9 +435,11 @@
 
 .quiz-review-stage {
     position: relative;
+    display: flex;
+    flex-direction: column;
     flex: 1;
-    min-height: 720px;
-    align-items: flex-start;
+    min-height: 0;
+    align-items: stretch;
 }
 
 .quiz-review-green-panel {
@@ -443,23 +452,46 @@
 }
 
 .quiz-review-stage-actions {
-    position: absolute;
-    top: 0;
-    right: 0;
+    position: static;
     display: flex;
-    gap: 0.7rem;
+    align-self: flex-end;
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
     z-index: 3;
 }
 
+.quiz-review-stage-actions .quiz-review-icon-button {
+    width: 2.2rem;
+    height: 2.2rem;
+}
+
+.quiz-review-side-actions .quiz-review-icon-button {
+    width: 2.2rem;
+    height: 2.2rem;
+}
+
+.quiz-review-stage-actions .quiz-review-menu-button span {
+    width: 0.78rem;
+}
+
+.quiz-review-stage-actions .quiz-review-checkmark {
+    width: 0.72rem;
+    height: 0.4rem;
+}
+
 .quiz-review-card {
-    margin-top: 56px;
-    margin-left: 58px;
-    width: calc(100% - 58px);
-    min-height: 520px;
+    margin-top: 0;
+    margin-left: 0;
+    width: 100%;
+    min-height: 0;
     padding: 0;
     border-radius: 34px;
     overflow: hidden;
     box-sizing: border-box;
+}
+
+.quiz-review-card::after {
+    content: none;
 }
 
 .quiz-review-progress {
@@ -471,6 +503,20 @@
     border-right: 1px solid #e8ece4;
     overflow: hidden;
     border-radius: 22px 0 0 22px;
+}
+
+.quiz-review-progress-item-temp {
+    min-height: 54px;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid #e8ece4;
+    background: #ffffff;
+    color: #2a2a2a;
+    font-family: "Red Hat Display", sans-serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    padding: 0;
+    cursor: pointer;
 }
 
 .quiz-review-progress-item {
@@ -518,7 +564,8 @@
 
 .quiz-review-layout {
     display: flex;
-    min-height: 520px;
+    min-height: 0;
+    height: 100%;
     width: 100%;
 }
 
@@ -603,20 +650,29 @@
 
 .quiz-review-trash-icon {
     position: relative;
-    width: 0.95rem;
-    height: 1rem;
+    display: block;
+    width: 0.82rem;
+    height: 0.88rem;
     border: 2px solid #ffffff;
     border-top: none;
-    border-radius: 0 0 3px 3px;
+    border-radius: 0 0 4px 4px;
+    transform: translateY(3px);
+    background-image:
+        linear-gradient(#ffffff, #ffffff),
+        linear-gradient(#ffffff, #ffffff),
+        linear-gradient(#ffffff, #ffffff);
+    background-repeat: no-repeat;
+    background-size: 2px 0.42rem, 2px 0.42rem, 2px 0.42rem;
+    background-position: 26% 60%, 50% 60%, 74% 60%;
 }
 
 .quiz-review-trash-icon::before {
     content: "";
     position: absolute;
-    top: -0.34rem;
+    top: -0.3rem;
     left: 50%;
-    width: 1.05rem;
-    height: 2px;
+    width: 1.12rem;
+    height: 0.2rem;
     background: #ffffff;
     border-radius: 999px;
     transform: translateX(-50%);
@@ -625,12 +681,13 @@
 .quiz-review-trash-icon::after {
     content: "";
     position: absolute;
-    top: 0.18rem;
+    top: -0.52rem;
     left: 50%;
-    width: 2px;
-    height: 0.55rem;
-    background: #ffffff;
-    box-shadow: -0.22rem 0 0 #ffffff, 0.22rem 0 0 #ffffff;
+    width: 0.48rem;
+    height: 0.2rem;
+    border: 2px solid #ffffff;
+    border-bottom: none;
+    border-radius: 0.22rem 0.22rem 0 0;
     transform: translateX(-50%);
 }
 
@@ -825,26 +882,8 @@
 }
 
 @media (max-width: 1100px) {
-    .quiz-review-content {
-        flex-direction: column;
-    }
-
-    .quiz-review-left {
-        flex: none;
-        min-width: auto;
-    }
-
     .quiz-review-stage {
-        min-height: 620px;
         width: 100%;
-    }
-
-    .quiz-review-illustration {
-        justify-content: center;
-    }
-
-    .quiz-review-green-panel {
-        max-width: 34vw;
     }
 }
 
@@ -874,7 +913,7 @@
     .quiz-review-card {
         margin-left: 0;
         width: 100%;
-        margin-top: 24px;
+        margin-top: 0;
     }
 
     .quiz-review-green-panel {

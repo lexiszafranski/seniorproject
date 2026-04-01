@@ -1,19 +1,32 @@
-import { useUser, useAuth } from '@clerk/clerk-react';
+import { useUser, useClerk } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/dashboard.css';
 import ufImg from '../assets/ufimg.png';
 import cardImg from '../assets/cardimg.jpg';
 import { useEffect, useState } from 'react';
 import { api } from "../config/api";
+import backArrow from '../assets/Caret_Left.png';
+
 
 function Dashboard() {
   const { user } = useUser();
-  const { getToken, isSignedIn } = useAuth();
+  const { signOut } = useClerk();
   const navigate = useNavigate();
-  const [courses, setCourses] = useState<any[]>([]);
+  const [, setCourses] = useState<any[]>([]);
   const [coursesWithQuizzes, setCoursesWithQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  const userInitial = (
+    user?.firstName?.[0] ||
+    user?.lastName?.[0] ||
+    user?.fullName?.[0] ||
+    user?.primaryEmailAddress?.emailAddress?.[0] ||
+    'U'
+  ).toUpperCase();
+
+  async function handleLogout() {
+    await signOut({ redirectUrl: '/login' });
+  }
   
   useEffect(() => {
     async function loadCoursesAndQuizzes() {
@@ -76,14 +89,19 @@ function Dashboard() {
         </div>
         <h1 className="header-welcome">WELCOME BACK, {user?.firstName?.toUpperCase() || 'User'}!</h1>
         <div className="header-actions">
-          <button 
+          {/* <button 
             type="button" 
             className="btn-new-quiz"
             onClick={() => navigate('/quiz-structure')}
           >
             New Quiz
+          </button> */}
+          <div className="header-avatar" aria-label="User profile initial">
+            {userInitial}
+          </div>
+          <button type="button" className="btn-logout" onClick={handleLogout}>
+            <span className="btn-logout-icon" aria-hidden="true"></span>
           </button>
-          <div className="header-avatar" />
         </div>
       </header>
 
@@ -92,21 +110,30 @@ function Dashboard() {
       <main className="main">
         {selectedCourse ? (
           <section className="section">
-            <button 
-              onClick={() => setSelectedCourse(null)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#000',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                marginBottom: '1rem',
-                textDecoration: 'underline'
-              }}
+            <div className="quiz-header">
+              <div className="sub-nav">
+                <button
+                  type="button"
+                  className="review-back-nav"
+                  onClick={() => setSelectedCourse(null)}
+                  aria-label="Go back"
+                  style={{marginBottom: 0}}
+                >
+                  <img src={backArrow} className="back-arrow" alt="" />
+                </button>
+
+                <h2 className="section-heading" style={{marginBottom: 0}}>Your Practice Quizzes</h2>  
+              </div>
+
+              <button 
+              type="button" 
+              className="btn-new-quiz"
+              onClick={() => navigate('/quiz-structure')}
             >
-              ← Back to Courses
+              New Quiz
             </button>
-            <h2 className="section-heading">Your Practice Quizzes</h2>
+            </div>
+            <h2 className="section-heading" style={{fontWeight: "400"}}>Published</h2>
             <div className="cards">
               {selectedCourse.quizzes && selectedCourse.quizzes.length > 0 ? (
                 selectedCourse.quizzes.map((quiz: any) => (
@@ -123,7 +150,7 @@ function Dashboard() {
               )}
             </div>
             {/* need to store drafts or unplublished quizzes here  */}
-             <h2 className="section-heading">Drafts</h2>
+             <h2 className="section-heading" style={{fontWeight: "400"}}>Drafts</h2>
              <div>
 
              </div>
@@ -133,7 +160,13 @@ function Dashboard() {
             <h2 className="section-heading">Dashboard</h2>
             <div className="cards">
               {loading ? (
-                <p>Loading courses...</p>
+                <div className="loading-status" role="status" aria-live="polite">
+                  <span className="loading-dots" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </span>
+                </div>
               ) : coursesWithQuizzes.length > 0 ? (
                 coursesWithQuizzes.map((course) => (
                   <article 
