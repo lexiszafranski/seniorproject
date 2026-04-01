@@ -122,6 +122,11 @@ function Dashboard() {
                 <p>No quizzes found for this course</p>
               )}
             </div>
+            {/* need to store drafts or unplublished quizzes here  */}
+             <h2 className="section-heading">Drafts</h2>
+             <div>
+
+             </div>
           </section>
         ) : (
           <section className="section">

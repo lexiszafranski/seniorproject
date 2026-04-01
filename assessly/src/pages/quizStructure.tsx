@@ -17,10 +17,12 @@ function QuizStructure() {
 
     const [files, setFiles] = useState<any[]>([]);
     const [selectedFileIds, setSelectedFileIds] = useState<number[]>([]);
+    const [materialSearchQuery, setMaterialSearchQuery] = useState("");
     const [isLoadingFiles, setIsLoadingFiles] = useState(false);
     const [filesError, setFilesError] = useState<string | null>(null);
     const [prevQuizzes, setPrevQuizzes] = useState<any[]>([]);
     const [selectedQuizIds, setSelectedQuizIds] = useState<number[]>([]);
+    const [quizSearchQuery, setQuizSearchQuery] = useState("");
 
     // Quiz generation state
     const [isGenerating, setIsGenerating] = useState(false);
@@ -35,7 +37,7 @@ function QuizStructure() {
     const [multiple_attempts_enabled, setMultipleAttemptsEnabled] = useState(false);
     const [has_time_limit, setHasTimeLimit] = useState(false);
     const [session_time_limit_in_seconds, setSessionTimeLimitInSeconds] = useState<number | null>(null);
-    const [result_view_restricted, setResultViewRestricted] = useState(false);
+    // const [result_view_restricted, setResultViewRestricted] = useState(false);
     const [displayResultsWithItems, setDisplayResultsWithItems] = useState(false);
     const [isAssignmentGroupOpen, setIsAssignmentGroupOpen] = useState(false);
 
@@ -83,13 +85,15 @@ function QuizStructure() {
     // Load files and quizzes when course is selected
     useEffect(() => {
         if (!selectedCourseId) return;
+        const courseId = selectedCourseId;
 
         async function loadFiles() {
             setIsLoadingFiles(true);
             setFilesError(null);
+            setMaterialSearchQuery("");
 
             try {
-                const response = await api.getFiles(selectedCourseId);
+                const response = await api.getFiles(courseId);
                 setFiles(response?.files || []);
             } catch (error) {
                 console.error('Failed to load files:', error);
@@ -99,8 +103,9 @@ function QuizStructure() {
             }
         }
         async function loadQuizzes() {
+            setQuizSearchQuery("");
             try {
-                const response = await api.getQuizzes(selectedCourseId);
+                const response = await api.getQuizzes(courseId);
                 setPrevQuizzes(response?.quizzes || []);
             } catch (error) {
                 console.error('Failed to load quizzes:', error);
@@ -201,7 +206,7 @@ function QuizStructure() {
         // Step 0: Choose Course
         if (index === 0) {
             return (
-                <div>
+                <div className="quizStepPanel">
                     {isLoadingCourses && <p>Loading courses...</p>}
                     
                     {!isLoadingCourses && courses.length === 0 && (
@@ -209,50 +214,95 @@ function QuizStructure() {
                     )}
 
                     {!isLoadingCourses && courses.length > 0 && (
-                        courses.map((course) => (
-                            <label key={course.id} className="quizFileOption">
-                                <input
-                                    type="radio"
-                                    name="courseSelection"
-                                    checked={selectedCourseId === course.id}
-                                    onChange={() => setSelectedCourseId(course.id)}
-                                    className="quizCheckbox"
-                                />
-                                {course.name}
-                            </label>
-                        ))
+                        <div className="quizStepChecklist">
+                            {courses.map((course) => (
+                                <label key={course.id} className="quizFileOption">
+                                    <input
+                                        type="radio"
+                                        name="courseSelection"
+                                        checked={selectedCourseId === course.id}
+                                        onChange={() => setSelectedCourseId(course.id)}
+                                        className="quizCheckbox"
+                                    />
+                                    {course.name}
+                                </label>
+                            ))}
+                        </div>
                     )}
                 </div>
             );
         }
         // Step 1: Choose Canvas Quizzes 
         else if (index === 1) {
+            const filteredQuizzes = prevQuizzes.filter((quiz) => {
+                const quizTitle = (quiz.title || "").toLowerCase();
+                return quizTitle.includes(quizSearchQuery.trim().toLowerCase());
+            });
+
             return (
-                <div>
+                <div className="quizQuestionContainer quizStepPanel">
+                    <input
+                        type="text"
+                        value={quizSearchQuery}
+                        onChange={(e) => setQuizSearchQuery(e.target.value)}
+                        placeholder="Search previous quizzes"
+                        className="quizMaterialSearch"
+                        aria-label="Search previous quizzes"
+                    />
+
                     {prevQuizzes.length === 0 && (
                         <p>No previous quizzes found for this course to reference</p>
                     )}
 
-                    {prevQuizzes.length > 0 && (
-                        prevQuizzes.map((quiz) => (
-                            <label key={quiz.id} className="quizFileOption">
-                                <input
-                                    type="checkbox"
-                                    checked={selectedQuizIds.includes(quiz.id)}
-                                    onChange={() => handleQuizToggle(quiz.id)}
-                                    className="quizCheckbox"
-                                />
-                                {quiz.title}
-                            </label>
-                        ))
+                    {prevQuizzes.length > 0 && filteredQuizzes.length === 0 && (
+                        <p>No matching quizzes found</p>
+                    )}
+
+                    {filteredQuizzes.length > 0 && (
+                        <div className="quizStepChecklist">
+                            {filteredQuizzes.map((quiz) => (
+                                <label key={quiz.id} className="quizFileOption">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedQuizIds.includes(quiz.id)}
+                                        onChange={() => handleQuizToggle(quiz.id)}
+                                        className="quizCheckbox"
+                                    />
+                                    {quiz.title}
+                                </label>
+                            ))}
+                        </div>
                     )}
                 </div>
             );
         }
         // Step 2: Choose Canvas materials 
         else if (index === 2) {
+            const filteredFiles = files.filter((file) => {
+                const fileName = (file.display_name || "").toLowerCase();
+                return fileName.includes(materialSearchQuery.trim().toLowerCase());
+            });
+
             return (
-                <div>
+                <div className="quizQuestionContainer quizStepPanel">
+                <input
+                        type="text"
+                        value={materialSearchQuery}
+                        onChange={(e) => setMaterialSearchQuery(e.target.value)}
+                        placeholder="Search Canvas materials"
+                        className="quizMaterialSearch"
+                        aria-label="Search materials"
+                    />
+                <div className="quizQuestionContainer quizStepMaterialsList">
+                    {/* <input
+                        type="text"
+                        value={materialSearchQuery}
+                        onChange={(e) => setMaterialSearchQuery(e.target.value)}
+                        placeholder="Search Canvas materials"
+                        className="quizMaterialSearch"
+                        aria-label="Search materials"
+                    /> */}
+
                     {isLoadingFiles && <p>Loading Canvas files...</p>}
                     {filesError && <p>{filesError}</p>}
 
@@ -260,8 +310,12 @@ function QuizStructure() {
                         <p>No files found for this course</p>
                     )}
 
-                    {!isLoadingFiles && !filesError && files.length > 0 && (
-                        files.map((file) => (
+                    {!isLoadingFiles && !filesError && files.length > 0 && filteredFiles.length === 0 && (
+                        <p>No matching materials found</p>
+                    )}
+
+                    {!isLoadingFiles && !filesError && filteredFiles.length > 0 && (
+                        filteredFiles.map((file) => (
                             <label key={file.id} className="quizFileOption">
                                 <input
                                     type="checkbox"
@@ -273,6 +327,7 @@ function QuizStructure() {
                             </label>
                         ))
                     )}
+                </div>
                 </div>
             );
         }
@@ -293,7 +348,7 @@ function QuizStructure() {
         // Step 3: Quiz Qualities 
         else if (index === 3) {
             return (
-                <div className="quizQuestionContainer" style={{ maxHeight: '25vh', overflowY: 'auto', overflowX: 'hidden' }}>
+                <div className="quizQuestionContainer quizStepPanel">
                     {/* Quiz Title */}
                     <div className="quizQuestionContainer">
                         <p>Quiz Title</p>
@@ -388,7 +443,7 @@ function QuizStructure() {
                             />
                         </div>
                     )}
-                    {/* Display results toggle  */}
+                    {/* Display results toggle 
                     <div className="quizQuestionContainerToggle">
                         <p>Display Results</p>
                         <label className="toggleSwitch">
@@ -398,7 +453,7 @@ function QuizStructure() {
                             />
                             <span className="slider"></span>
                         </label>
-                    </div>
+                    </div> */}
                    {/* Display results with items  */}
                     <div className="quizQuestionContainerToggle">
                         <p>Display Results with Items</p>
@@ -424,7 +479,7 @@ function QuizStructure() {
             - enable image generation
             */
             return (
-                <div className="quizQuestionContainer" style={{ maxHeight: '25vh', overflowY: 'auto', overflowX: 'hidden' }}>
+                <div className="quizQuestionContainer quizStepPanel quizStepPromptPanel">
                      {/* Quiz questions */}
                     <div className="quizQuestionContainer">
                         <p>Number of Questions to Generate</p>
@@ -447,13 +502,13 @@ function QuizStructure() {
                         </label>
                     </div>
                      {/* Additional prompting notes */}
-                    <div className="quizQuestionContainer">
+                    <div className="quizQuestionContainer quizPromptNotesContainer">
                         <p>Additional prompting notes</p>
-                        <input type="text" 
+                        <textarea
                         id = "quiz_additional_notes"
-                        value={additionalNotes} 
+                        value={additionalNotes}
                         onChange={(e) => setAdditionalNotes(e.target.value)}
-                        className="quizInputText"
+                        className="quizNotesInput"
                         />
                     </div>
                 </div>
@@ -479,13 +534,13 @@ function QuizStructure() {
                     onClick={() => navigate('/dashboard')}
                     style={{ cursor: 'pointer' }}
                 />
-                <div className="image-container-white">
+                {/* <div className="image-container-white">
                     <img src={sideImg} className="quiz-img" alt="Quiz Structure Image"/>
-                </div>
+                </div> */}
             </div>
         
             <div className="questions-container">
-                <img src={greenBackground} className="green-background" alt="Green Background"/>
+                {/* <img src={greenBackground} className="green-background" alt="Green Background"/> */}
                 <div className="questions">
                     <p className="question-num">{structureQuestions[index].id}/{structureQuestions.length}</p>
                     <h3 className="question-text">{structureQuestions[index].title}</h3>

@@ -24,10 +24,16 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  display: block;
   min-width: 320px;
   min-height: 100vh;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
 }
 
 h1 {
@@ -55,6 +61,12 @@ button:focus-visible {
 }
 
 p {
+  margin: 0;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
   margin: 0;
 }
 
