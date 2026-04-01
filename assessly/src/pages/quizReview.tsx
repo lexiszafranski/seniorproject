@@ -18,7 +18,6 @@ function QuizReview() {
   const [error, setError] = useState<string | null>(null);
 
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -46,11 +45,7 @@ function QuizReview() {
 
   const activeQuestion = questions[activeQuestionIndex];
 
-  function handleAnswerSelect(choiceId: string) {
-    setSelectedAnswers((prev) => ({ ...prev, [activeQuestionIndex]: choiceId }));
-  }
-
-  if (loading) return <div className="page"><p style={{ padding: '2rem' }}>Loading quiz...</p></div>;
+if (loading) return <div className="page"><p style={{ padding: '2rem' }}>Loading quiz...</p></div>;
   if (error) return <div className="page"><p style={{ padding: '2rem' }}>Error: {error}</p></div>;
 
   return (
@@ -124,19 +119,15 @@ function QuizReview() {
                     {/* Answer choices */}
                     <div className="quizStepMaterialsList" style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                       {activeQuestion.choices?.map((choice: any) => {
-                        const isSelected = selectedAnswers[activeQuestionIndex] === choice.internal_choice_id;
                         return (
-                          <button
+                          <div
                             key={choice.internal_choice_id}
-                            type="button"
-                            onClick={() => handleAnswerSelect(choice.internal_choice_id)}
                             className="quizInputText"
                             style={{
-                              cursor: 'pointer',
                               textAlign: 'left',
-                              background: isSelected ? '#171717' : '#ffffff',
-                              color: isSelected ? '#ffffff' : '#1f2f2c',
-                              border: isSelected ? '1px solid #171717' : '1px solid #C0C0C0',
+                              background: choice.is_correct ? 'rgba(70, 130, 120, 0.15)' : '#ffffff',
+                              color: '#1f2f2c',
+                              border: choice.is_correct ? '1px solid rgba(70, 130, 120, 0.4)' : '1px solid #C0C0C0',
                               fontFamily: '"Red Hat Display", sans-serif',
                               fontSize: '1rem',
                             }}
