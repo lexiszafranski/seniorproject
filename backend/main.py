@@ -27,6 +27,7 @@ from clerk_auth import verify_clerk_token
 from canvas_retriever import CanvasContentRetriever
 from gemini_retriever import generate_quiz_from_files
 from canvas_publisher import publish_quiz_to_canvas
+import markdown as md_lib
 
 load_dotenv()
 
@@ -400,7 +401,7 @@ async def generate_quiz(body: GenerateQuizRequest, current_user: dict = Depends(
             choices.append({
                 "internal_choice_id": str(uuid.uuid4()),
                 "position": j,
-                "text_html": f"<p>{c['text']}</p>",
+                "text_html": md_lib.markdown(c['text']),
                 "is_correct": c.get("is_correct", False)
             })
         questions.append({
@@ -409,8 +410,8 @@ async def generate_quiz(body: GenerateQuizRequest, current_user: dict = Depends(
             "type": "multiple_choice",
             "position": i,
             "points_possible": 1,
-            "question_stem_html": f"<p>{q['question_stem']}</p>",
-            "overall_rationale_html": f"<p>{q.get('rationale', '')}</p>",
+            "question_stem_html": md_lib.markdown(q['question_stem']),
+            "overall_rationale_html": md_lib.markdown(q.get('rationale', '')),
             "choices": choices,
             "publish_error": None
         })

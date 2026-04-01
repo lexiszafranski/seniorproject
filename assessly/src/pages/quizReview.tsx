@@ -21,6 +21,8 @@ function QuizReview() {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!quizId) {
@@ -184,13 +186,33 @@ function QuizReview() {
 
       {/* Finish modal */}
       {isFinishModalOpen && (
-        <div className="quiz-review-modal-overlay" role="presentation" onClick={() => setIsFinishModalOpen(false)}>
+        <div className="quiz-review-modal-overlay" role="presentation" onClick={() => { if (!isPublishing) setIsFinishModalOpen(false); }}>
           <div className="quiz-review-delete-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <h2 className="quiz-review-delete-title">Finished Quiz Review</h2>
             <p className="quiz-review-delete-text">Do you want to upload the quiz to Canvas or save it as a draft?</p>
+            {publishError && <p style={{ color: 'red', fontSize: '0.9rem', margin: '0.5rem 0 0' }}>{publishError}</p>}
             <div className="quiz-review-delete-actions">
-              <button type="button" className="quiz-review-delete-cancel" onClick={() => setIsFinishModalOpen(false)}>Draft</button>
-              <button type="button" className="quiz-review-delete-confirm" onClick={() => setIsFinishModalOpen(false)}>Upload</button>
+              <button type="button" className="quiz-review-delete-cancel" disabled={isPublishing} onClick={() => { setIsFinishModalOpen(false); navigate('/dashboard'); }}>Draft</button>
+              <button
+                type="button"
+                className="quiz-review-delete-confirm"
+                disabled={isPublishing}
+                onClick={async () => {
+                  if (!quizId) return;
+                  setIsPublishing(true);
+                  setPublishError(null);
+                  try {
+                    await api.publishQuiz(quizId);
+                    setIsFinishModalOpen(false);
+                    navigate('/dashboard');
+                  } catch (e: any) {
+                    setPublishError(e.message || 'Failed to publish quiz.');
+                    setIsPublishing(false);
+                  }
+                }}
+              >
+                {isPublishing ? 'Uploading...' : 'Upload'}
+              </button>
             </div>
           </div>
         </div>

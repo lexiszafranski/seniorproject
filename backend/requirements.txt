@@ -17,3 +17,4 @@ pymongo==4.6.1
 httpx
 google-genai
 certifi
+markdown==3.6
