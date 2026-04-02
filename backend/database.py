@@ -18,7 +18,7 @@ DATABASE SETUP - MongoDB
 - user_has_tokens(): checks if user completed onboarding
 """
 
-from pymongo import MongoClient
+from pymongo import MongoClient, ASCENDING
 from datetime import datetime
 import os
 import certifi
@@ -40,12 +40,16 @@ db = client[DB_NAME]
 
 # collections
 users_collection = db["users"]
+course_quizzes_collection = db["course_quizzes"]
 
 
 def init_db():
     """Create indexes - call this after server starts"""
     try:
         users_collection.create_index("clerk_id", unique=True)
+        course_quizzes_collection.create_index(
+            [("clerk_id", ASCENDING), ("course_id", ASCENDING)]
+        )
     except Exception as e:
         print(f"Index creation error (may already exist): {e}")
 

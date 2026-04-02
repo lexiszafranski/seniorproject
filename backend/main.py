@@ -17,11 +17,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 import os
 import httpx
+import uuid
+import json
+from datetime import datetime, timezone
 from dotenv import load_dotenv
-from database import get_or_create_user, update_user, users_collection, init_db, user_has_tokens
+from bson import ObjectId
+from database import get_or_create_user, update_user, users_collection, course_quizzes_collection, init_db, user_has_tokens
 from clerk_auth import verify_clerk_token
 from canvas_retriever import CanvasContentRetriever
 from gemini_retriever import generate_quiz_from_files
+from canvas_publisher import publish_quiz_to_canvas
+import markdown as md_lib
 
 load_dotenv()
 
@@ -71,6 +77,10 @@ class FileInfo(BaseModel):
 
 class GenerateQuizRequest(BaseModel):
     files: list[FileInfo]
+    course_id: int | None = None
+    quiz_ids: list[int] = []
+    question_count: int = 5
+    title: str = "Generated Practice Quiz"
 
 
 async def get_current_user(authorization: str = Header(...)) -> dict:
@@ -356,12 +366,158 @@ async def generate_quiz(body: GenerateQuizRequest, current_user: dict = Depends(
 
     files = [f.model_dump() for f in body.files]
 
+    # Fetch questions from any previously selected quizzes
+    previous_questions = []
+    if body.course_id and body.quiz_ids:
+        canvas = CanvasContentRetriever(
+            canvas_url="https://ufl.instructure.com",
+            access_token=canvas_token
+        )
+        for quiz_id in body.quiz_ids:
+            try:
+                questions = canvas.get_quiz_questions(body.course_id, quiz_id)
+                previous_questions.extend(questions)
+            except Exception as e:
+                print(f"Warning: could not fetch questions for quiz {quiz_id}: {e}")
+
     try:
-        quiz = generate_quiz_from_files(files, canvas_token, gemini_token)
+        quiz = generate_quiz_from_files(files, canvas_token, gemini_token, previous_questions, body.question_count)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-        print(gemini_token)
     except RuntimeError as e:
         raise HTTPException(status_code=502, detail=str(e))
 
-    return quiz
+    print("\n--- GENERATED QUIZ ---")
+    print(json.dumps(quiz, indent=2))
+    print("----------------------\n")
+
+    # Build internal MongoDB document from Gemini output
+    now = datetime.now(timezone.utc)
+    questions = []
+    for i, q in enumerate(quiz.get("questions", []), start=1):
+        question_id = str(uuid.uuid4())
+        choices = []
+        for j, c in enumerate(q.get("choices", []), start=1):
+            choices.append({
+                "internal_choice_id": str(uuid.uuid4()),
+                "position": j,
+                "text_html": md_lib.markdown(c['text']),
+                "is_correct": c.get("is_correct", False)
+            })
+        questions.append({
+            "internal_question_id": question_id,
+            "canvas_item_id": None,
+            "type": "multiple_choice",
+            "position": i,
+            "points_possible": 1,
+            "question_stem_html": md_lib.markdown(q['question_stem']),
+            "overall_rationale_html": md_lib.markdown(q.get('rationale', '')),
+            "choices": choices,
+            "publish_error": None
+        })
+
+    quiz_doc = {
+        "clerk_id": current_user["clerk_id"],
+        "course_id": body.course_id,
+        "assignment_id": None,
+        "new_quiz_id": None,
+        "title": body.title,
+        "description_html": "",
+        "question_count": len(questions),
+        "questions": questions,
+        "status": "generated_pending_review",
+        "created_at": now,
+        "updated_at": now,
+        "generation_metadata": {
+            "source_file_display_names": [f["display_name"] for f in files],
+            "source_prev_quiz_ids": body.quiz_ids,
+            "gemini_model_used": "gemini-2.5-flash"
+        },
+        "publish_metadata": {
+            "published_at": None,
+            "last_error": None
+        }
+    }
+
+    result = course_quizzes_collection.insert_one(quiz_doc)
+    print(f"Saved quiz to MongoDB with id: {result.inserted_id}")
+
+    return {"quiz_id": str(result.inserted_id), "questions": questions}
+
+
+@app.get("/api/quizzes/{quiz_id}")
+async def get_quiz(quiz_id: str, current_user: dict = Depends(get_current_user)):
+    try:
+        quiz_doc = course_quizzes_collection.find_one({
+            "_id": ObjectId(quiz_id),
+            "clerk_id": current_user["clerk_id"]
+        })
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid quiz id.")
+
+    if not quiz_doc:
+        raise HTTPException(status_code=404, detail="Quiz not found.")
+
+    quiz_doc["_id"] = str(quiz_doc["_id"])
+    return quiz_doc
+
+
+@app.post("/api/quizzes/{quiz_id}/publish")
+async def publish_quiz(quiz_id: str, current_user: dict = Depends(get_current_user)):
+    canvas_token = current_user.get("canvas_token") or os.getenv("CANVAS_TOKEN")
+    if not canvas_token:
+        raise HTTPException(status_code=400, detail="No Canvas token found.")
+
+    # Fetch quiz doc from MongoDB
+    try:
+        quiz_doc = course_quizzes_collection.find_one({
+            "_id": ObjectId(quiz_id),
+            "clerk_id": current_user["clerk_id"]
+        })
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid quiz id.")
+
+    if not quiz_doc:
+        raise HTTPException(status_code=404, detail="Quiz not found.")
+
+    if quiz_doc["status"] == "published":
+        raise HTTPException(status_code=400, detail="Quiz is already published.")
+
+    # Publish to Canvas
+    try:
+        publish_result = publish_quiz_to_canvas(quiz_doc, canvas_token)
+    except RuntimeError as e:
+        course_quizzes_collection.update_one(
+            {"_id": ObjectId(quiz_id)},
+            {"$set": {
+                "status": "publish_failed",
+                "publish_metadata.last_error": str(e),
+                "updated_at": datetime.now(timezone.utc)
+            }}
+        )
+        raise HTTPException(status_code=502, detail=str(e))
+
+    # Write Canvas IDs back to MongoDB
+    now = datetime.now(timezone.utc)
+    question_updates = {
+        f"questions.{i}.canvas_item_id": q["canvas_item_id"]
+        for i, q in enumerate(publish_result["questions"])
+    }
+    course_quizzes_collection.update_one(
+        {"_id": ObjectId(quiz_id)},
+        {"$set": {
+            "status": "published",
+            "new_quiz_id": publish_result["new_quiz_id"],
+            "assignment_id": publish_result["assignment_id"],
+            "publish_metadata.published_at": now,
+            "publish_metadata.last_error": None,
+            "updated_at": now,
+            **question_updates
+        }}
+    )
+
+    return {
+        "quiz_id": quiz_id,
+        "new_quiz_id": publish_result["new_quiz_id"],
+        "assignment_id": publish_result["assignment_id"]
+    }

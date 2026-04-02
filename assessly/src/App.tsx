@@ -179,10 +179,22 @@ function App() {
           }
         />
 
-        <Route path="/add-courses" element={<AddCourses />} />
-        <Route path="/quiz-structure" element={<QuizStructure />} />
-        <Route path="/quiz-review" element={<QuizReview />} />
-        <Route path="/dashboardtest" element={<Dashboard />} />
+        {/* Quiz Review Route */}
+        <Route
+          path="/quiz-review"
+          element={
+            <SignedIn>
+              {hasCanvasToken === null ? (
+                <div>Loading...</div>
+              ) : hasCanvasToken ? (
+                <QuizReview />
+              ) : (
+                <Navigate to="/tokens" replace />
+              )}
+            </SignedIn>
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>

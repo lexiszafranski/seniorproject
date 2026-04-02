@@ -1,146 +1,101 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import questionMark from '../assets/Question_Mark.png';
 import backArrow from '../assets/Caret_Left.png';
-import { mockGeneratedQuizQuestions } from '../config/mockData';
+import { api } from '../config/api';
 
 import '../styles/quizStructure.css';
 
-type AnswerOption = {
-  id: string;
-  text: string;
-};
-
-type ReviewQuestion = {
-  id: number;
-  group?: string;
-  title: string;
-  prompt?: string;
-  answers: AnswerOption[];
-  feedback?: {
-    correctAnswerId?: string;
-    crossedOutAnswerId?: string;
-  };
-};
-
-const reviewQuestions: ReviewQuestion[] = mockGeneratedQuizQuestions.questions.map((question) => ({
-  id: question.spot_number,
-  group: question.group,
-  title: question.question,
-  prompt: question.prompt,
-  answers: question.answer_choices.map((choice, index) => ({
-    id: `q${question.spot_number}-a${index + 1}`,
-    text: choice
-  }))
-}));
-
 function QuizReview() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const quizId = searchParams.get('quiz_id');
+
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [quizTitle, setQuizTitle] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
-  const activeQuestion = reviewQuestions[activeQuestionIndex];
+  useEffect(() => {
+    if (!quizId) {
+      setError('No quiz ID provided.');
+      setLoading(false);
+      return;
+    }
+    async function loadQuiz() {
+      try {
+        const doc = await api.getQuiz(quizId!);
+        setQuizTitle(doc.title || 'Quiz Review');
+        setQuestions(doc.questions || []);
+      } catch (e: any) {
+        setError(e.message || 'Failed to load quiz.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadQuiz();
+  }, [quizId]);
 
-  function handleAnswerSelect(answerId: string) {
-    if (!activeQuestion) return;
+  const activeQuestion = questions[activeQuestionIndex];
 
-    setSelectedAnswers((currentAnswers) => ({
-      ...currentAnswers,
-      [activeQuestion.id]: answerId
-    }));
-  }
-
-  function goToPreviousQuestion() {
-    setActiveQuestionIndex((currentIndex) => Math.max(currentIndex - 1, 0));
-  }
-
-  function goToNextQuestion() {
-    setActiveQuestionIndex((currentIndex) => Math.min(currentIndex + 1, reviewQuestions.length - 1));
-  }
-
-  function closeDeleteModal() {
-    setIsDeleteModalOpen(false);
-  }
-
-  function closeFinishModal() {
-    setIsFinishModalOpen(false);
-  }
-
-  function handleDeleteQuestion() {
-    closeDeleteModal();
-  }
+if (loading) return <div className="page"><p style={{ padding: '2rem' }}>Loading quiz...</p></div>;
+  if (error) return <div className="page"><p style={{ padding: '2rem' }}>Error: {error}</p></div>;
 
   return (
-    <div className="page quiz-review-page">
+    <div className="page">
       <div className="top-bar">
-            <h2 className="top-bar-text" onClick={() => navigate('/dashboard')}>ASSESSLY</h2>
-            <img src={questionMark} alt="Help button" className="top-bar-help"/>
-        </div>
-        <hr></hr>
+        <h2 className="top-bar-text" onClick={() => navigate('/dashboard')}>ASSESSLY</h2>
+        <img src={questionMark} alt="Help button" className="top-bar-help" />
+      </div>
+      <hr />
 
-      <div className="content quiz-review-content">
-        <div className="left quiz-review-left">
-          <button
-            type="button"
-            className="review-back-nav"
+      <div className="content">
+        <div className="left">
+          <img
+            src={backArrow}
+            className="back-arrow"
+            alt="Back button"
             onClick={() => navigate(-1)}
-            aria-label="Go back"
-          >
-            <img src={backArrow} className="back-arrow" alt="" />
-          </button>
+            style={{ cursor: 'pointer' }}
+          />
         </div>
 
-        <div className="right">
-          <div className="quiz-review-stage-actions">
-            <button type="button" className="quiz-review-icon-button quiz-review-menu-button" aria-label="Open menu">
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
-            <button
-              type="button"
-              className="quiz-review-icon-button"
-              aria-label="Confirm review"
-              onClick={() => setIsFinishModalOpen(true)}
-            >
-              <span className="quiz-review-checkmark" aria-hidden="true"></span>
-            </button>
-          </div>
-        <div className="questions-container quiz-review-stage">
-          <div className="questions quiz-review-card">
-            <div className="quiz-review-layout">
-              <div className="quiz-review-progress" aria-label="Question navigation">
-                <button
-                    type="button"
-                    className="quiz-review-progress-item-temp"
-                    style = {{backgroundColor: "#468278"}}
-                  >
-                  </button>
-                {reviewQuestions.map((question, index) => (
+        <div className="questions-container">
+          <div className="questions" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', width: '100%', height: '100%', minHeight: 0 }}>
+
+              {/* Question number sidebar */}
+              <div className="quiz-review-progress">
+                {questions.map((_, index) => (
                   <button
-                    key={question.id}
+                    key={index}
                     type="button"
-                    className={`quiz-review-progress-item ${question.id === activeQuestion.id ? 'active' : ''}`}
+                    className={`quiz-review-progress-item ${index === activeQuestionIndex ? 'active' : ''}`}
                     onClick={() => setActiveQuestionIndex(index)}
-                    aria-label={`Open question ${question.id}`}
+                    aria-label={`Go to question ${index + 1}`}
                   >
-                    {question.id}
+                    {index + 1}
                   </button>
                 ))}
               </div>
 
-              <div className="quiz-review-main">
+              {/* Main panel */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '1.9rem 2.1rem 1.35rem', minHeight: 0 }}>
                 {activeQuestion ? (
                   <>
+                    {/* Header */}
                     <div className="quiz-review-header">
                       <div className="quiz-review-title-block">
-                        {activeQuestion.group && <p className="quiz-review-group">{activeQuestion.group}</p>}
-                        <h3 className="question-text quiz-review-question-label">{activeQuestion.title}</h3>
+                        <p className="quiz-review-group">{quizTitle}</p>
+                        <p className="quiz-review-question-label">Question {activeQuestionIndex + 1}</p>
                       </div>
-
                       <div className="quiz-review-side-actions">
                         <button type="button" className="quiz-review-icon-button" aria-label="Add question">
                           <span className="quiz-review-plus-icon" aria-hidden="true">+</span>
@@ -156,126 +111,98 @@ function QuizReview() {
                       </div>
                     </div>
 
-                    {activeQuestion.prompt ? (
-                      <>
-                        <h2 className="quiz-review-title">{activeQuestion.prompt}</h2>
+                    {/* Question stem */}
+                    <h3 className="question-text" style={{ marginTop: '1.15rem', fontWeight: 400, fontSize: 'clamp(1.1rem, 1.7vw, 1.55rem)' }}
+                      dangerouslySetInnerHTML={{ __html: activeQuestion.question_stem_html }}
+                    />
 
-                        <div className="quiz-review-options" role="list">
-                          {activeQuestion.answers.map((answer) => {
-                            const selectedAnswerId = selectedAnswers[activeQuestion.id];
-                            const isSelected = selectedAnswerId === answer.id;
-                            const isCorrect = activeQuestion.feedback?.correctAnswerId === answer.id;
-                            const isCrossedOut = activeQuestion.feedback?.crossedOutAnswerId === answer.id;
-
-                            return (
-                              <button
-                                key={answer.id}
-                                type="button"
-                                className={`quiz-review-option ${isSelected ? 'is-selected' : ''}`}
-                                onClick={() => handleAnswerSelect(answer.id)}
-                              >
-                                <span
-                                  className={`quiz-review-box ${
-                                    isSelected ? 'is-selected' : ''
-                                  } ${isCorrect ? 'is-correct' : ''} ${isCrossedOut ? 'is-crossed-out' : ''}`}
-                                  aria-hidden="true"
-                                ></span>
-                                <span
-                                  className={`quiz-review-option-text ${
-                                    isCorrect ? 'is-correct' : ''
-                                  } ${isCrossedOut ? 'is-crossed-out' : ''}`}
-                                >
-                                  {answer.text}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="quiz-review-empty-state" aria-label={`Question ${activeQuestion.id} placeholder`}>
-                        <p className="quiz-review-empty-title">{activeQuestion.title}</p>
-                        <p className="quiz-review-empty-text">This review slot is left blank for now.</p>
-                      </div>
-                    )}
+                    {/* Answer choices */}
+                    <div className="quizStepMaterialsList" style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                      {activeQuestion.choices?.map((choice: any) => {
+                        return (
+                          <div
+                            key={choice.internal_choice_id}
+                            className="quizInputText"
+                            style={{
+                              textAlign: 'left',
+                              background: choice.is_correct ? 'rgba(70, 130, 120, 0.15)' : '#ffffff',
+                              color: '#1f2f2c',
+                              border: choice.is_correct ? '1px solid rgba(70, 130, 120, 0.4)' : '1px solid #C0C0C0',
+                              fontFamily: '"Red Hat Display", sans-serif',
+                              fontSize: '1rem',
+                            }}
+                            dangerouslySetInnerHTML={{ __html: choice.text_html }}
+                          />
+                        );
+                      })}
+                    </div>
                   </>
                 ) : (
-                  <div className="quiz-review-empty-state" aria-label="No questions available">
-                    <p className="quiz-review-empty-title">No questions available</p>
-                    <p className="quiz-review-empty-text">There are no questions left to review.</p>
-                  </div>
+                  <p>No questions available.</p>
                 )}
 
-                <div className={`buttons quiz-review-buttons ${activeQuestionIndex === 0 ? 'no-back' : 'has-back'}`}>
-                  {activeQuestionIndex > 0 && (
-                    <button type="button" className="button-back quiz-review-back-button" onClick={goToPreviousQuestion}>
-                      Back
-                    </button>
+                {/* Navigation buttons */}
+                <div className="buttons" style={{ marginTop: 'auto' }}>
+                  {activeQuestionIndex > 0 ? (
+                    <button className="button-back" onClick={() => setActiveQuestionIndex((i) => i - 1)}>Back</button>
+                  ) : (
+                    <span />
                   )}
-                  <button
-                    type="button"
-                    className="button-next quiz-review-next-button"
-                    onClick={goToNextQuestion}
-                    disabled={!activeQuestion || activeQuestionIndex >= reviewQuestions.length - 1}
-                  >
-                    Next
-                  </button>
+                  {activeQuestionIndex < questions.length - 1 ? (
+                    <button className="button-next" onClick={() => setActiveQuestionIndex((i) => i + 1)}>Next</button>
+                  ) : (
+                    <button className="button-next" onClick={() => setIsFinishModalOpen(true)}>Finish</button>
+                  )}
                 </div>
               </div>
+
             </div>
           </div>
         </div>
-        </div>
       </div>
 
-      {isDeleteModalOpen && activeQuestion && (
-        <div className="quiz-review-modal-overlay" role="presentation" onClick={closeDeleteModal}>
-          <div
-            className="quiz-review-delete-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-question-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h2 id="delete-question-title" className="quiz-review-delete-title">
-              Delete Question
-            </h2>
-            <p className="quiz-review-delete-text">
-              Are you sure you want to permanently delete this question?
-            </p>
+      {/* Delete modal */}
+      {isDeleteModalOpen && (
+        <div className="quiz-review-modal-overlay" role="presentation" onClick={() => setIsDeleteModalOpen(false)}>
+          <div className="quiz-review-delete-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h2 className="quiz-review-delete-title">Delete Question</h2>
+            <p className="quiz-review-delete-text">Are you sure you want to permanently delete this question?</p>
             <div className="quiz-review-delete-actions">
-              <button type="button" className="quiz-review-delete-cancel" onClick={closeDeleteModal}>
-                Cancel
-              </button>
-              <button type="button" className="quiz-review-delete-confirm" onClick={handleDeleteQuestion}>
-                Delete
-              </button>
+              <button type="button" className="quiz-review-delete-cancel" onClick={() => setIsDeleteModalOpen(false)}>Cancel</button>
+              <button type="button" className="quiz-review-delete-confirm" onClick={() => setIsDeleteModalOpen(false)}>Delete</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Finish modal */}
       {isFinishModalOpen && (
-        <div className="quiz-review-modal-overlay" role="presentation" onClick={closeFinishModal}>
-          <div
-            className="quiz-review-delete-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="finish-quiz-review-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h2 id="finish-quiz-review-title" className="quiz-review-delete-title">
-              Finished Quiz Review
-            </h2>
-            <p className="quiz-review-delete-text">
-              Do you want to upload the quiz to Canvas or save it as a draft?
-            </p>
+        <div className="quiz-review-modal-overlay" role="presentation" onClick={() => { if (!isPublishing) setIsFinishModalOpen(false); }}>
+          <div className="quiz-review-delete-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h2 className="quiz-review-delete-title">Finished Quiz Review</h2>
+            <p className="quiz-review-delete-text">Do you want to upload the quiz to Canvas or save it as a draft?</p>
+            {publishError && <p style={{ color: 'red', fontSize: '0.9rem', margin: '0.5rem 0 0' }}>{publishError}</p>}
             <div className="quiz-review-delete-actions">
-              <button type="button" className="quiz-review-delete-cancel" onClick={closeFinishModal}>
-                Draft
-              </button>
-              <button type="button" className="quiz-review-delete-confirm" onClick={closeFinishModal}>
-                Upload
+              <button type="button" className="quiz-review-delete-cancel" disabled={isPublishing} onClick={() => { setIsFinishModalOpen(false); navigate('/dashboard'); }}>Draft</button>
+              <button
+                type="button"
+                className="quiz-review-delete-confirm"
+                disabled={isPublishing}
+                onClick={async () => {
+                  if (!quizId) return;
+                  setIsPublishing(true);
+                  setPublishError(null);
+                  try {
+                    await api.publishQuiz(quizId);
+                    setIsFinishModalOpen(false);
+                    navigate('/dashboard');
+                  } catch (e: any) {
+                    setPublishError(e.message || 'Failed to publish quiz.');
+                    setIsPublishing(false);
+                  }
+                }}
+              >
+                {isPublishing ? 'Uploading...' : 'Upload'}
               </button>
             </div>
           </div>
