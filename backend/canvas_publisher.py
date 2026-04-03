@@ -50,7 +50,7 @@ def publish_quiz_to_canvas(quiz_doc: dict, canvas_token: str) -> dict:
     shell_data = shell_resp.json()
     print(f"Quiz shell response: {shell_data}")
     new_quiz_id = shell_data.get("id")
-    assignment_id = shell_data.get("assignment_id")
+    assignment_id = None
 
     if not new_quiz_id:
         raise RuntimeError(f"Canvas did not return a quiz id. Response: {shell_data}")
@@ -135,6 +135,9 @@ def publish_quiz_to_canvas(quiz_doc: dict, canvas_token: str) -> dict:
         raise RuntimeError(
             f"Failed to publish quiz: {publish_resp.status_code} {publish_resp.text}"
         )
+
+    # For Canvas New Quizzes, assignment_id == new_quiz_id
+    assignment_id = new_quiz_id
 
     print(f"Quiz {new_quiz_id} published successfully.")
 
