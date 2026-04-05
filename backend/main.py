@@ -26,7 +26,7 @@ from database import get_or_create_user, update_user, users_collection, course_q
 from clerk_auth import verify_clerk_token
 from canvas_retriever import CanvasContentRetriever
 from gemini_retriever import generate_quiz_from_files
-from canvas_publisher import publish_quiz_to_canvas
+from canvas_publisher import publish_quiz_to_canvas, get_all_new_quiz_ids_for_course
 import markdown as md_lib
 
 load_dotenv()
@@ -447,13 +447,39 @@ async def generate_quiz(body: GenerateQuizRequest, current_user: dict = Depends(
 
 @app.get("/api/courses/{course_id}/assessly-quizzes")
 async def get_assessly_quizzes(course_id: int, current_user: dict = Depends(get_current_user)):
+    canvas_token = current_user.get("canvas_token") or os.getenv("CANVAS_TOKEN")
+
     docs = list(course_quizzes_collection.find(
         {"clerk_id": current_user["clerk_id"], "course_id": course_id},
-        {"_id": 1, "title": 1, "status": 1, "question_count": 1, "created_at": 1}
+        {"_id": 1, "title": 1, "status": 1, "question_count": 1, "created_at": 1, "new_quiz_id": 1}
     ))
+
+    sync_warning = False
+    if canvas_token:
+        published_docs = [d for d in docs if d.get("status") == "published" and d.get("new_quiz_id")]
+        if published_docs:
+            try:
+                canvas_quiz_ids = get_all_new_quiz_ids_for_course(course_id, canvas_token)
+                for doc in published_docs:
+                    if str(doc["new_quiz_id"]) not in canvas_quiz_ids:
+                        course_quizzes_collection.update_one(
+                            {"_id": doc["_id"]},
+                            {"$set": {
+                                "status": "generated_pending_review",
+                                "new_quiz_id": None,
+                                "assignment_id": None,
+                                "updated_at": datetime.now(timezone.utc)
+                            }}
+                        )
+                        doc["status"] = "generated_pending_review"
+                        doc["new_quiz_id"] = None
+            except RuntimeError:
+                sync_warning = True
+
     for doc in docs:
         doc["_id"] = str(doc["_id"])
-    return {"quizzes": docs}
+        doc.pop("new_quiz_id", None)
+    return {"quizzes": docs, "sync_warning": sync_warning}
 
 
 @app.get("/api/quizzes/{quiz_id}")

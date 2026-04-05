@@ -12,10 +12,10 @@ function Dashboard() {
   const { user } = useUser();
   const { signOut } = useClerk();
   const navigate = useNavigate();
-  const [, setCourses] = useState<any[]>([]);
   const [coursesWithQuizzes, setCoursesWithQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  const [syncWarning, setSyncWarning] = useState(false);
   // TODO: retrieve recently drafted quizzes 
   //const [cachedQuizzes, setCachedQuizzes] = useState<any[]>([]);
   // Dummy data 
@@ -36,57 +36,41 @@ function Dashboard() {
   }
   
   useEffect(() => {
-    async function loadCoursesAndQuizzes() {
+    async function loadCourses() {
       setLoading(true);
       try {
-        // Fetch courses
         const data = await api.syncCourses();
-        console.log("All Courses:", data.courses);
-        
-        // Filter to only Teacher/TA courses
         const teacherCourses = data.courses.filter((course: any) => {
           const validRoles = ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment'];
-          return course.enrollments?.some((enrollment: any) => 
+          return course.enrollments?.some((enrollment: any) =>
             validRoles.includes(enrollment.role)
           );
         });
-        
-        console.log("Teacher/TA Courses:", teacherCourses);
-        setCourses(teacherCourses);
-        
-        // Only fetch quizzes for Teacher/TA courses
-        if (teacherCourses.length > 0) {
-          const coursesData = await Promise.all(
-            teacherCourses.map(async (course: any) => {
-              try {
-                const quizzesData = await api.getAssesslyQuizzes(course.id);
-                return {
-                  ...course,
-                  quiz_count: quizzesData.quizzes.length,
-                  quizzes: quizzesData.quizzes
-                };
-              } catch (error) {
-                console.error(`Error fetching quizzes for ${course.name}:`, error);
-                return {
-                  ...course,
-                  quiz_count: 0,
-                  quizzes: []
-                };
-              }
-            })
-          );
-          setCoursesWithQuizzes(coursesData);
-        } else {
-          setCoursesWithQuizzes([]);
-        }
+        setCoursesWithQuizzes(teacherCourses);
       } catch (error) {
         console.error("Error loading courses:", error);
       } finally {
         setLoading(false);
       }
     }
-    loadCoursesAndQuizzes();
+    loadCourses();
   }, []);
+
+  async function handleCourseClick(course: any) {
+    setSyncWarning(false);
+    try {
+      const quizzesData = await api.getAssesslyQuizzes(course.id);
+      if (quizzesData.sync_warning) setSyncWarning(true);
+      setSelectedCourse({
+        ...course,
+        quiz_count: quizzesData.quizzes.length,
+        quizzes: quizzesData.quizzes,
+      });
+    } catch (error) {
+      console.error(`Error fetching quizzes for ${course.name}:`, error);
+      setSelectedCourse({ ...course, quiz_count: 0, quizzes: [] });
+    }
+  }
   
   return (
     <div className="dashboard">
@@ -140,6 +124,12 @@ function Dashboard() {
               New Quiz
             </button>
             </div>
+            {syncWarning && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.75rem 0', padding: '0.6rem 1rem', background: '#fff2f2', border: '1px solid #f5c6c6', borderRadius: '6px', color: '#c0392b', fontSize: '0.875rem' }}>
+                <span style={{ fontWeight: 700, fontSize: '1rem' }}>ⓘ</span>
+                Unable to sync with Canvas at the moment.
+              </div>
+            )}
             <h2 className="section-heading" style={{fontWeight: "400"}}>Published</h2>
             <div className="cards">
               {selectedCourse.quizzes?.filter((q: any) => q.status === 'published').length > 0 ? (
@@ -203,7 +193,7 @@ function Dashboard() {
                   <article 
                     className="card" 
                     key={course.id}
-                    onClick={() => setSelectedCourse(course)}
+                    onClick={() => handleCourseClick(course)}
                     style={{ cursor: 'pointer' }}
                   >
                     <img src={cardImg} alt={course.name} className="card-image" />
