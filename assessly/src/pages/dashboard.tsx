@@ -138,8 +138,11 @@ function Dashboard() {
                     <img src={cardImg} alt={quiz.title} className="card-image" />
                     <h3 className="card-title">{quiz.title}</h3>
                     <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#666' }}>
-                      {quiz.question_count} {quiz.question_count === 1 ? 'question' : 'questions'}
+                      {quiz.question_count} {quiz.question_count === 1 ? 'Question' : 'Questions'}
                     </p>
+                    <span style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#2e7d5e', background: 'rgba(46,125,94,0.1)', border: '1px solid rgba(46,125,94,0.3)', borderRadius: '4px', padding: '2px 8px' }}>
+                      Published
+                    </span>
                   </article>
                 ))
               ) : (
@@ -154,8 +157,11 @@ function Dashboard() {
                     <img src={cardImg} alt={quiz.title} className="card-image" />
                     <h3 className="card-title">{quiz.title}</h3>
                     <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#666' }}>
-                      {quiz.question_count} {quiz.question_count === 1 ? 'question' : 'questions'}
+                      {quiz.question_count} {quiz.question_count === 1 ? 'Question' : 'Questions'}
                     </p>
+                    <span style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#888', background: 'rgba(136,136,136,0.1)', border: '1px solid rgba(136,136,136,0.3)', borderRadius: '4px', padding: '2px 8px' }}>
+                      Pending Review
+                    </span>
                   </article>
                 ))
               ) : (
