@@ -15,9 +15,12 @@ import requests
 CANVAS_BASE_URL = "https://ufl.instructure.com"
 
 
-def publish_quiz_to_canvas(quiz_doc: dict, canvas_token: str) -> dict:
+def publish_quiz_to_canvas(quiz_doc: dict, canvas_token: str, publish: bool = True) -> dict:
     """
-    Publish a quiz document (from MongoDB) to Canvas New Quizzes.
+    Save (and optionally publish) a quiz document to Canvas New Quizzes.
+
+    publish=True  → creates shell, posts questions, sets published=True  (status: published_on_canvas)
+    publish=False → creates shell, posts questions only, leaves unpublished (status: saved_to_canvas)
 
     Returns a dict with:
         new_quiz_id, assignment_id, questions (list with canvas_item_id filled in)
@@ -115,34 +118,52 @@ def publish_quiz_to_canvas(quiz_doc: dict, canvas_token: str) -> dict:
             "canvas_item_id": canvas_item_id
         })
 
-    # Step 3: Fetch current quiz state, then PATCH it with published=True
-    get_resp = requests.get(
-        f"{CANVAS_BASE_URL}/api/quiz/v1/courses/{course_id}/quizzes/{new_quiz_id}",
-        headers=headers
-    )
-    if not get_resp.ok:
-        raise RuntimeError(f"Failed to fetch quiz for publishing: {get_resp.status_code} {get_resp.text}")
-    quiz_state = get_resp.json()
-    print(f"Current quiz state: {quiz_state}")
-    quiz_state["published"] = True
-    publish_resp = requests.patch(
-        f"{CANVAS_BASE_URL}/api/quiz/v1/courses/{course_id}/quizzes/{new_quiz_id}",
-        headers=headers,
-        json={"quiz": quiz_state}
-    )
-    print(f"Publish response: {publish_resp.status_code} {publish_resp.text}")
-    if not publish_resp.ok:
-        raise RuntimeError(
-            f"Failed to publish quiz: {publish_resp.status_code} {publish_resp.text}"
+    # Step 3: Publish if requested
+    if publish:
+        get_resp = requests.get(
+            f"{CANVAS_BASE_URL}/api/quiz/v1/courses/{course_id}/quizzes/{new_quiz_id}",
+            headers=headers
         )
+        if not get_resp.ok:
+            raise RuntimeError(f"Failed to fetch quiz for publishing: {get_resp.status_code} {get_resp.text}")
+        quiz_state = get_resp.json()
+        quiz_state["published"] = True
+        publish_resp = requests.patch(
+            f"{CANVAS_BASE_URL}/api/quiz/v1/courses/{course_id}/quizzes/{new_quiz_id}",
+            headers=headers,
+            json={"quiz": quiz_state}
+        )
+        if not publish_resp.ok:
+            raise RuntimeError(f"Failed to publish quiz: {publish_resp.status_code} {publish_resp.text}")
+        print(f"Quiz {new_quiz_id} published successfully.")
+    else:
+        print(f"Quiz {new_quiz_id} saved to Canvas as unpublished draft.")
 
     # For Canvas New Quizzes, assignment_id == new_quiz_id
     assignment_id = new_quiz_id
-
-    print(f"Quiz {new_quiz_id} published successfully.")
 
     return {
         "new_quiz_id": new_quiz_id,
         "assignment_id": assignment_id,
         "questions": updated_questions
+    }
+
+
+def get_all_new_quizzes_for_course(course_id: int, canvas_token: str) -> dict:
+    """
+    Fetches all New Quizzes for a course in one call.
+    Returns a dict of {quiz_id (str): {"title": str, "published": bool}}.
+    """
+    headers = {"Authorization": f"Bearer {canvas_token}"}
+    resp = requests.get(
+        f"{CANVAS_BASE_URL}/api/quiz/v1/courses/{course_id}/quizzes",
+        headers=headers,
+        params={"per_page": 100}
+    )
+    if not resp.ok:
+        raise RuntimeError(f"Failed to fetch New Quizzes for course: {resp.status_code} {resp.text}")
+
+    return {
+        str(q["id"]): {"title": q.get("title", ""), "published": bool(q.get("published", False))}
+        for q in resp.json() if q.get("id")
     }

@@ -113,7 +113,7 @@ def generate_quiz_from_files(files: list, canvas_token: str, gemini_token: str =
             gemini_response = client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=contents,
-                config={"response_mime_type": "application/json"}
+                config={"response_mime_type": "application/json", "thinking_config": {"thinking_budget": 0}}
             )
         except Exception as e:
             raise RuntimeError(f"Gemini content generation failed: {str(e)}")

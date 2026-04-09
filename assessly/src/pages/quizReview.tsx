@@ -20,8 +20,8 @@ function QuizReview() {
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [publishError, setPublishError] = useState<string | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!quizId) {
@@ -177,32 +177,59 @@ if (loading) return <div className="page"><p style={{ padding: '2rem' }}>Loading
 
       {/* Finish modal */}
       {isFinishModalOpen && (
-        <div className="quiz-review-modal-overlay" role="presentation" onClick={() => { if (!isPublishing) setIsFinishModalOpen(false); }}>
+        <div className="quiz-review-modal-overlay" role="presentation" onClick={() => { if (!isActionLoading) setIsFinishModalOpen(false); }}>
           <div className="quiz-review-delete-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <h2 className="quiz-review-delete-title">Finished Quiz Review</h2>
-            <p className="quiz-review-delete-text">Do you want to upload the quiz to Canvas or save it as a draft?</p>
-            {publishError && <p style={{ color: 'red', fontSize: '0.9rem', margin: '0.5rem 0 0' }}>{publishError}</p>}
+            <p className="quiz-review-delete-text">What would you like to do with this quiz?</p>
+            {actionError && <p style={{ color: 'red', fontSize: '0.9rem', margin: '0.5rem 0 0' }}>{actionError}</p>}
             <div className="quiz-review-delete-actions">
-              <button type="button" className="quiz-review-delete-cancel" disabled={isPublishing} onClick={() => { setIsFinishModalOpen(false); navigate('/dashboard'); }}>Draft</button>
+              <button
+                type="button"
+                className="quiz-review-delete-cancel"
+                disabled={isActionLoading}
+                onClick={() => { setIsFinishModalOpen(false); navigate('/dashboard'); }}
+              >
+                Keep as Draft
+              </button>
+              <button
+                type="button"
+                className="quiz-review-delete-cancel"
+                disabled={isActionLoading}
+                onClick={async () => {
+                  if (!quizId) return;
+                  setIsActionLoading(true);
+                  setActionError(null);
+                  try {
+                    await api.saveQuizToCanvas(quizId);
+                    setIsFinishModalOpen(false);
+                    navigate('/dashboard');
+                  } catch (e: any) {
+                    setActionError(e.message || 'Failed to save quiz to Canvas.');
+                    setIsActionLoading(false);
+                  }
+                }}
+              >
+                {isActionLoading ? 'Saving...' : 'Save to Canvas'}
+              </button>
               <button
                 type="button"
                 className="quiz-review-delete-confirm"
-                disabled={isPublishing}
+                disabled={isActionLoading}
                 onClick={async () => {
                   if (!quizId) return;
-                  setIsPublishing(true);
-                  setPublishError(null);
+                  setIsActionLoading(true);
+                  setActionError(null);
                   try {
                     await api.publishQuiz(quizId);
                     setIsFinishModalOpen(false);
                     navigate('/dashboard');
                   } catch (e: any) {
-                    setPublishError(e.message || 'Failed to publish quiz.');
-                    setIsPublishing(false);
+                    setActionError(e.message || 'Failed to publish quiz.');
+                    setIsActionLoading(false);
                   }
                 }}
               >
-                {isPublishing ? 'Uploading...' : 'Upload'}
+                {isActionLoading ? 'Uploading...' : 'Publish to Canvas'}
               </button>
             </div>
           </div>

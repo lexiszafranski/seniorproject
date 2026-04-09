@@ -12,10 +12,10 @@ function Dashboard() {
   const { user } = useUser();
   const { signOut } = useClerk();
   const navigate = useNavigate();
-  const [, setCourses] = useState<any[]>([]);
   const [coursesWithQuizzes, setCoursesWithQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  const [syncWarning, setSyncWarning] = useState(false);
   // TODO: retrieve recently drafted quizzes 
   //const [cachedQuizzes, setCachedQuizzes] = useState<any[]>([]);
   // Dummy data 
@@ -36,57 +36,41 @@ function Dashboard() {
   }
   
   useEffect(() => {
-    async function loadCoursesAndQuizzes() {
+    async function loadCourses() {
       setLoading(true);
       try {
-        // Fetch courses
         const data = await api.syncCourses();
-        console.log("All Courses:", data.courses);
-        
-        // Filter to only Teacher/TA courses
         const teacherCourses = data.courses.filter((course: any) => {
           const validRoles = ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment'];
-          return course.enrollments?.some((enrollment: any) => 
+          return course.enrollments?.some((enrollment: any) =>
             validRoles.includes(enrollment.role)
           );
         });
-        
-        console.log("Teacher/TA Courses:", teacherCourses);
-        setCourses(teacherCourses);
-        
-        // Only fetch quizzes for Teacher/TA courses
-        if (teacherCourses.length > 0) {
-          const coursesData = await Promise.all(
-            teacherCourses.map(async (course: any) => {
-              try {
-                const quizzesData = await api.getQuizzes(course.id);
-                return {
-                  ...course,
-                  quiz_count: quizzesData.quiz_count,
-                  quizzes: quizzesData.quizzes
-                };
-              } catch (error) {
-                console.error(`Error fetching quizzes for ${course.name}:`, error);
-                return {
-                  ...course,
-                  quiz_count: 0,
-                  quizzes: []
-                };
-              }
-            })
-          );
-          setCoursesWithQuizzes(coursesData);
-        } else {
-          setCoursesWithQuizzes([]);
-        }
+        setCoursesWithQuizzes(teacherCourses);
       } catch (error) {
         console.error("Error loading courses:", error);
       } finally {
         setLoading(false);
       }
     }
-    loadCoursesAndQuizzes();
+    loadCourses();
   }, []);
+
+  async function handleCourseClick(course: any) {
+    setSyncWarning(false);
+    try {
+      const quizzesData = await api.getAssesslyQuizzes(course.id);
+      if (quizzesData.sync_warning) setSyncWarning(true);
+      setSelectedCourse({
+        ...course,
+        quiz_count: quizzesData.quizzes.length,
+        quizzes: quizzesData.quizzes,
+      });
+    } catch (error) {
+      console.error(`Error fetching quizzes for ${course.name}:`, error);
+      setSelectedCourse({ ...course, quiz_count: 0, quizzes: [] });
+    }
+  }
   
   return (
     <div className="dashboard">
@@ -140,27 +124,56 @@ function Dashboard() {
               New Quiz
             </button>
             </div>
-            <h2 className="section-heading" style={{fontWeight: "400"}}>Published</h2>
+            {syncWarning && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.75rem 0', padding: '0.6rem 1rem', background: '#fff2f2', border: '1px solid #f5c6c6', borderRadius: '6px', color: '#c0392b', fontSize: '0.875rem' }}>
+                <span style={{ fontWeight: 700, fontSize: '1rem' }}>ⓘ</span>
+                Unable to sync with Canvas at the moment.
+              </div>
+            )}
+            <h2 className="section-heading" style={{fontWeight: "400"}}>Synced with Canvas</h2>
             <div className="cards">
-              {selectedCourse.quizzes && selectedCourse.quizzes.length > 0 ? (
-                selectedCourse.quizzes.map((quiz: any) => (
-                  <article className="card" key={quiz.id}>
+              {selectedCourse.quizzes?.filter((q: any) => q.status === 'published_on_canvas' || q.status === 'saved_to_canvas').length > 0 ? (
+                selectedCourse.quizzes.filter((q: any) => q.status === 'published_on_canvas' || q.status === 'saved_to_canvas').map((quiz: any) => (
+                  <article className="card" key={quiz._id} onClick={() => navigate(`/quiz-review?quiz_id=${quiz._id}`)} style={{ cursor: 'pointer' }}>
                     <img src={cardImg} alt={quiz.title} className="card-image" />
                     <h3 className="card-title">{quiz.title}</h3>
                     <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#666' }}>
-                      {quiz.question_count} {quiz.question_count === 1 ? 'question' : 'questions'} • {quiz.points_possible} points
+                      {quiz.question_count} {quiz.question_count === 1 ? 'Question' : 'Questions'}
                     </p>
+                    {quiz.status === 'published_on_canvas' ? (
+                      <span style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#2e7d5e', background: 'rgba(46,125,94,0.1)', border: '1px solid rgba(46,125,94,0.3)', borderRadius: '4px', padding: '2px 8px' }}>
+                        Published
+                      </span>
+                    ) : (
+                      <span style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#b07d00', background: 'rgba(176,125,0,0.1)', border: '1px solid rgba(176,125,0,0.3)', borderRadius: '4px', padding: '2px 8px' }}>
+                        Saved to Canvas
+                      </span>
+                    )}
                   </article>
                 ))
               ) : (
-                <p>No quizzes found for this course</p>
+                <p>No quizzes synced with Canvas</p>
               )}
             </div>
-            {/* need to store drafts or unplublished quizzes here  */}
-             <h2 className="section-heading" style={{fontWeight: "400"}}>Drafts</h2>
-             <div>
-
-             </div>
+            <h2 className="section-heading" style={{fontWeight: "400"}}>Drafts</h2>
+            <div className="cards">
+              {selectedCourse.quizzes?.filter((q: any) => q.status !== 'published_on_canvas' && q.status !== 'saved_to_canvas').length > 0 ? (
+                selectedCourse.quizzes.filter((q: any) => q.status !== 'published_on_canvas' && q.status !== 'saved_to_canvas').map((quiz: any) => (
+                  <article className="card" key={quiz._id} onClick={() => navigate(`/quiz-review?quiz_id=${quiz._id}`)} style={{ cursor: 'pointer' }}>
+                    <img src={cardImg} alt={quiz.title} className="card-image" />
+                    <h3 className="card-title">{quiz.title}</h3>
+                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#666' }}>
+                      {quiz.question_count} {quiz.question_count === 1 ? 'Question' : 'Questions'}
+                    </p>
+                    <span style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#888', background: 'rgba(136,136,136,0.1)', border: '1px solid rgba(136,136,136,0.3)', borderRadius: '4px', padding: '2px 8px' }}>
+                      Pending Review
+                    </span>
+                  </article>
+                ))
+              ) : (
+                <p>No drafts</p>
+              )}
+            </div>
           </section>
         ) : (
           <section className="section">
@@ -192,7 +205,7 @@ function Dashboard() {
                   <article 
                     className="card" 
                     key={course.id}
-                    onClick={() => setSelectedCourse(course)}
+                    onClick={() => handleCourseClick(course)}
                     style={{ cursor: 'pointer' }}
                   >
                     <img src={cardImg} alt={course.name} className="card-image" />
