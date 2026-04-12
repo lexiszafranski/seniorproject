@@ -53,6 +53,24 @@ function QuizReview() {
 
   const activeQuestion = questions[activeQuestionIndex];
 
+  // Flushes any pending pointsEdits to the backend. Called implicitly before Canvas actions.
+  async function flushEdits() {
+    if (!quizId || Object.keys(pointsEdits).length === 0) return;
+    const questionUpdates = Object.entries(pointsEdits).map(([id, val]) => ({
+      internal_question_id: id,
+      points_possible: Number(val),
+    }));
+    await api.saveQuizEdits(quizId, questionUpdates);
+    setQuestions((prev) =>
+      prev.map((q) =>
+        q.internal_question_id in pointsEdits
+          ? { ...q, points_possible: Number(pointsEdits[q.internal_question_id]) }
+          : q
+      )
+    );
+    setPointsEdits({});
+  }
+
   async function handleSave() {
     if (!quizId) return;
     // Only send questions that actually have changes in pointsEdits
@@ -342,6 +360,7 @@ if (loading) return <div className="page"><p style={{ padding: '2rem' }}>Loading
                     setActiveAction('save');
                     setActionError(null);
                     try {
+                      await flushEdits();
                       await api.saveQuizToCanvas(quizId);
                       setIsFinishModalOpen(false);
                       navigate('/dashboard');
@@ -366,6 +385,7 @@ if (loading) return <div className="page"><p style={{ padding: '2rem' }}>Loading
                     setActiveAction('publish');
                     setActionError(null);
                     try {
+                      await flushEdits();
                       await api.publishQuiz(quizId);
                       setIsFinishModalOpen(false);
                       navigate('/dashboard');
