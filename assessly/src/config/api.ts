@@ -106,6 +106,16 @@ saveQuizToCanvas: async (quizId: string) => {
     return response.json();
   },
 
+unpublishQuiz: async (quizId: string) => {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE}/api/quizzes/${quizId}/unpublish`, { method: 'POST', headers });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || 'Failed to unpublish quiz');
+    }
+    return response.json();
+  },
+
 revertToDraft: async (quizId: string) => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE}/api/quizzes/${quizId}/revert-to-draft`, { method: 'POST', headers });

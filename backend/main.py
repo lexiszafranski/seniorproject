@@ -26,7 +26,7 @@ from database import get_or_create_user, update_user, users_collection, course_q
 from clerk_auth import verify_clerk_token
 from canvas_retriever import CanvasContentRetriever
 from gemini_retriever import generate_quiz_from_files
-from canvas_publisher import publish_quiz_to_canvas, publish_existing_canvas_quiz, get_all_new_quizzes_for_course, delete_quiz_from_canvas
+from canvas_publisher import publish_quiz_to_canvas, publish_existing_canvas_quiz, unpublish_canvas_quiz, get_all_new_quizzes_for_course, delete_quiz_from_canvas
 import markdown as md_lib
 from encryption import encrypt, decrypt
 
@@ -671,8 +671,8 @@ async def revert_to_draft(quiz_id: str, current_user: dict = Depends(get_current
         raise HTTPException(status_code=400, detail="Invalid quiz ID.")
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found.")
-    if quiz["status"] != "saved_to_canvas":
-        raise HTTPException(status_code=400, detail="Only quizzes saved to Canvas can be reverted to draft.")
+    if quiz["status"] not in ("saved_to_canvas", "published_on_canvas"):
+        raise HTTPException(status_code=400, detail="Only quizzes on Canvas can be reverted to draft.")
 
     new_quiz_id = quiz.get("new_quiz_id")
     course_id = quiz.get("course_id")
@@ -700,3 +700,41 @@ async def revert_to_draft(quiz_id: str, current_user: dict = Depends(get_current
         }}
     )
     return {"reverted": True}
+
+
+@app.post("/api/quizzes/{quiz_id}/unpublish")
+async def unpublish_quiz(quiz_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Unpublish a quiz on Canvas (sets published=False), keeping it there as a saved draft.
+    Status → saved_to_canvas.
+    """
+    try:
+        quiz = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id), "clerk_id": current_user["clerk_id"]})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid quiz ID.")
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found.")
+    if quiz["status"] != "published_on_canvas":
+        raise HTTPException(status_code=400, detail="Only published quizzes can be unpublished.")
+
+    new_quiz_id = quiz.get("new_quiz_id")
+    course_id = quiz.get("course_id")
+    if not new_quiz_id or not course_id:
+        raise HTTPException(status_code=400, detail="Quiz is missing Canvas IDs.")
+
+    canvas_token = current_user.get("canvas_token")
+    if canvas_token:
+        canvas_token = decrypt(canvas_token)
+    if not canvas_token:
+        raise HTTPException(status_code=400, detail="No Canvas token found.")
+
+    try:
+        unpublish_canvas_quiz(course_id, str(new_quiz_id), canvas_token)
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    course_quizzes_collection.update_one(
+        {"_id": ObjectId(quiz_id)},
+        {"$set": {"status": "saved_to_canvas", "updated_at": datetime.now(timezone.utc)}}
+    )
+    return {"unpublished": True}

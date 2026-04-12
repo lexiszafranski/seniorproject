@@ -21,7 +21,7 @@ function QuizReview() {
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
-  const [activeAction, setActiveAction] = useState<'delete' | 'revert' | 'save' | 'publish' | null>(null);
+  const [activeAction, setActiveAction] = useState<'delete' | 'revert' | 'save' | 'publish' | 'unpublish' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -207,8 +207,32 @@ if (loading) return <div className="page"><p style={{ padding: '2rem' }}>Loading
                 {activeAction === 'delete' ? 'Deleting...' : 'Delete Quiz'}
               </button>
 
-              {/* saved_to_canvas: revert to draft (removes from Canvas, keeps in MongoDB) */}
-              {quizStatus === 'saved_to_canvas' && (
+              {/* published_on_canvas: unpublish (keeps on Canvas as draft) */}
+              {quizStatus === 'published_on_canvas' && (
+                <button
+                  type="button"
+                  className="quiz-review-delete-cancel"
+                  disabled={!!activeAction}
+                  onClick={async () => {
+                    if (!quizId) return;
+                    setActiveAction('unpublish');
+                    setActionError(null);
+                    try {
+                      await api.unpublishQuiz(quizId);
+                      setIsFinishModalOpen(false);
+                      navigate('/dashboard');
+                    } catch (e: any) {
+                      setActionError(e.message || 'Failed to unpublish quiz.');
+                      setActiveAction(null);
+                    }
+                  }}
+                >
+                  {activeAction === 'unpublish' ? 'Unpublishing...' : 'Unpublish from Canvas'}
+                </button>
+              )}
+
+              {/* saved_to_canvas or published_on_canvas: revert to draft (removes from Canvas, keeps in MongoDB) */}
+              {(quizStatus === 'saved_to_canvas' || quizStatus === 'published_on_canvas') && (
                 <button
                   type="button"
                   className="quiz-review-delete-cancel"

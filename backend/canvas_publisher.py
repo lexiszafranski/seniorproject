@@ -177,6 +177,34 @@ def publish_existing_canvas_quiz(course_id: int, new_quiz_id: str, canvas_token:
         raise RuntimeError(f"Failed to publish existing quiz: {patch_resp.status_code} {patch_resp.text}")
 
 
+def unpublish_canvas_quiz(course_id: int, new_quiz_id: str, canvas_token: str) -> None:
+    """
+    Unpublishes a quiz on Canvas by PATCHing published=False.
+    The quiz remains on Canvas as an unpublished draft (saved_to_canvas).
+    Raises RuntimeError on failure.
+    """
+    headers = {
+        "Authorization": f"Bearer {canvas_token}",
+        "Content-Type": "application/json"
+    }
+    get_resp = requests.get(
+        f"{CANVAS_BASE_URL}/api/quiz/v1/courses/{course_id}/quizzes/{new_quiz_id}",
+        headers=headers
+    )
+    if not get_resp.ok:
+        raise RuntimeError(f"Failed to fetch quiz for unpublishing: {get_resp.status_code} {get_resp.text}")
+
+    quiz_state = get_resp.json()
+    quiz_state["published"] = False
+    patch_resp = requests.patch(
+        f"{CANVAS_BASE_URL}/api/quiz/v1/courses/{course_id}/quizzes/{new_quiz_id}",
+        headers=headers,
+        json={"quiz": quiz_state}
+    )
+    if not patch_resp.ok:
+        raise RuntimeError(f"Failed to unpublish quiz: {patch_resp.status_code} {patch_resp.text}")
+
+
 def delete_quiz_from_canvas(course_id: int, new_quiz_id: str, canvas_token: str) -> None:
     """
     Deletes a New Quiz from Canvas. Raises RuntimeError if the request fails.
