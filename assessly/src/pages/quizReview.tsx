@@ -55,28 +55,23 @@ function QuizReview() {
 
   async function handleSave() {
     if (!quizId) return;
+    // Only send questions that actually have changes in pointsEdits
+    if (Object.keys(pointsEdits).length === 0) return;
     setIsSaving(true);
     setSaveError(null);
     try {
-      // Build the full list of questions with any edited points merged in
-      // Coerce to number — empty string edits fall back to 1
-      const resolvedPoints = (id: string, fallback: number): number => {
-        const edit = pointsEdits[id];
-        if (edit === '' || edit === undefined) return fallback;
-        const n = Number(edit);
-        return isNaN(n) || n < 1 ? 1 : n;
-      };
-      const questionUpdates = questions.map((q) => ({
-        internal_question_id: q.internal_question_id,
-        points_possible: resolvedPoints(q.internal_question_id, q.points_possible),
+      const questionUpdates = Object.entries(pointsEdits).map(([id, val]) => ({
+        internal_question_id: id,
+        points_possible: Number(val),
       }));
       await api.saveQuizEdits(quizId, questionUpdates);
-      // Commit edits into questions state so UI reflects saved values
+      // Commit only the changed questions into state
       setQuestions((prev) =>
-        prev.map((q) => ({
-          ...q,
-          points_possible: resolvedPoints(q.internal_question_id, q.points_possible),
-        }))
+        prev.map((q) =>
+          q.internal_question_id in pointsEdits
+            ? { ...q, points_possible: Number(pointsEdits[q.internal_question_id]) }
+            : q
+        )
       );
       setPointsEdits({});
     } catch (e: any) {
@@ -148,9 +143,19 @@ if (loading) return <div className="page"><p style={{ padding: '2rem' }}>Loading
                               setPointsEdits((prev) => ({ ...prev, [activeQuestion.internal_question_id]: e.target.value }));
                             }}
                             onBlur={(e) => {
-                              const val = parseFloat(e.target.value);
-                              // Revert to 1 if left empty or invalid
-                              setPointsEdits((prev) => ({ ...prev, [activeQuestion.internal_question_id]: isNaN(val) || val < 1 ? 1 : val }));
+                              const id = activeQuestion.internal_question_id;
+                              const raw = parseFloat(e.target.value);
+                              const resolved = isNaN(raw) || raw < 1 ? 1 : raw;
+                              setPointsEdits((prev) => {
+                                const next = { ...prev };
+                                // If resolved value matches the original, remove from edits (no change)
+                                if (resolved === activeQuestion.points_possible) {
+                                  delete next[id];
+                                } else {
+                                  next[id] = resolved;
+                                }
+                                return next;
+                              });
                             }}
                           />
                           <span className="quiz-review-points-label">pts</span>
