@@ -48,7 +48,7 @@ def init_db():
     try:
         users_collection.create_index("clerk_id", unique=True)
         course_quizzes_collection.create_index(
-            [("clerk_id", ASCENDING), ("course_id", ASCENDING)]
+            [("course_id", ASCENDING)]
         )
     except Exception as e:
         print(f"Index creation error (may already exist): {e}")
