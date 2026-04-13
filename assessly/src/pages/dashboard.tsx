@@ -1,6 +1,7 @@
 import { useUser, useClerk } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/dashboard.css';
+import '../styles/quizStructure.css';
 import ufImg from '../assets/ufimg.png';
 import cardImg from '../assets/cardimg.jpg';
 import { useEffect, useState } from 'react';
@@ -15,6 +16,7 @@ function Dashboard() {
   const [coursesWithQuizzes, setCoursesWithQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  const [isCourseLoading, setIsCourseLoading] = useState(false);
   const [syncWarning, setSyncWarning] = useState(false);
   // TODO: retrieve recently drafted quizzes 
   //const [cachedQuizzes, setCachedQuizzes] = useState<any[]>([]);
@@ -58,6 +60,7 @@ function Dashboard() {
 
   async function handleCourseClick(course: any) {
     setSyncWarning(false);
+    setIsCourseLoading(true);
     try {
       const quizzesData = await api.getAssesslyQuizzes(course.id);
       if (quizzesData.sync_warning) setSyncWarning(true);
@@ -69,6 +72,8 @@ function Dashboard() {
     } catch (error) {
       console.error(`Error fetching quizzes for ${course.name}:`, error);
       setSelectedCourse({ ...course, quiz_count: 0, quizzes: [] });
+    } finally {
+      setIsCourseLoading(false);
     }
   }
   
@@ -99,7 +104,12 @@ function Dashboard() {
       <hr className="separator" />
 
       <main className="main">
-        {selectedCourse ? (
+        {isCourseLoading ? (
+          <div className="quiz-review-loading-screen">
+            <div className="loader" />
+            <p className="quiz-review-loading-text">Retrieving Course Practice Material</p>
+          </div>
+        ) : selectedCourse ? (
           <section className="section">
             <div className="quiz-header">
               <div className="sub-nav">

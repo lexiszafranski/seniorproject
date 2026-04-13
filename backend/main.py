@@ -26,7 +26,7 @@ from database import get_or_create_user, update_user, users_collection, course_q
 from clerk_auth import verify_clerk_token
 from canvas_retriever import CanvasContentRetriever
 from gemini_retriever import generate_quiz_from_files
-from canvas_publisher import publish_quiz_to_canvas, publish_existing_canvas_quiz, unpublish_canvas_quiz, update_item_points_on_canvas, get_all_new_quizzes_for_course, delete_quiz_from_canvas
+from canvas_publisher import publish_quiz_to_canvas, publish_existing_canvas_quiz, unpublish_canvas_quiz, update_item_points_on_canvas, fetch_canvas_quiz_items, fetch_canvas_quiz_title, get_all_new_quizzes_for_course, delete_quiz_from_canvas
 import markdown as md_lib
 from encryption import encrypt, decrypt
 
@@ -528,6 +528,182 @@ async def get_quiz(quiz_id: str, current_user: dict = Depends(get_current_user))
 
     quiz_doc["_id"] = str(quiz_doc["_id"])
     return quiz_doc
+
+
+@app.post("/api/quizzes/{quiz_id}/sync-from-canvas")
+async def sync_from_canvas(quiz_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Pulls the latest quiz data from Canvas and updates MongoDB if anything changed.
+    Compares title, question order, question text, and answer choices.
+    Returns the updated quiz doc and a list of internal_question_ids that had changes.
+    Only applies to quizzes that are saved or published on Canvas.
+    """
+    try:
+        quiz = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id), "clerk_id": current_user["clerk_id"]})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid quiz ID.")
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found.")
+    if quiz.get("status") not in ("saved_to_canvas", "published_on_canvas"):
+        # Not on Canvas — nothing to sync
+        quiz["_id"] = str(quiz["_id"])
+        return {"quiz": quiz, "changed_question_ids": []}
+
+    new_quiz_id = quiz.get("new_quiz_id")
+    course_id = quiz.get("course_id")
+    if not new_quiz_id or not course_id:
+        quiz["_id"] = str(quiz["_id"])
+        return {"quiz": quiz, "changed_question_ids": []}
+
+    canvas_token = current_user.get("canvas_token")
+    if canvas_token:
+        canvas_token = decrypt(canvas_token)
+    if not canvas_token:
+        raise HTTPException(status_code=400, detail="No Canvas token found.")
+
+    try:
+        canvas_title = fetch_canvas_quiz_title(course_id, str(new_quiz_id), canvas_token)
+        canvas_items = fetch_canvas_quiz_items(course_id, str(new_quiz_id), canvas_token)
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    # Build a lookup of our stored questions by canvas_item_id
+    stored_by_canvas_id = {
+        str(q["canvas_item_id"]): q
+        for q in quiz.get("questions", [])
+        if q.get("canvas_item_id")
+    }
+
+    db_updates = {}
+    changed_question_ids = []
+
+    # Check title
+    if canvas_title and canvas_title != quiz.get("title", ""):
+        db_updates["title"] = canvas_title
+
+    # Sort canvas items by position to determine ordering
+    canvas_items_sorted = sorted(canvas_items, key=lambda x: x.get("position", 0))
+
+    new_questions = list(quiz.get("questions", []))
+
+    for canvas_item in canvas_items_sorted:
+        canvas_item_id = str(canvas_item.get("id", ""))
+        entry = canvas_item.get("entry", {})
+        stored_q = stored_by_canvas_id.get(canvas_item_id)
+
+        if not stored_q:
+            # New question added directly in Canvas — build a new question doc for it
+            canvas_choices = entry.get("interaction_data", {}).get("choices", [])
+            correct_id = entry.get("scoring_data", {}).get("value", "")
+            new_q_id = str(uuid.uuid4())
+            new_q = {
+                "internal_question_id": new_q_id,
+                "canvas_item_id": canvas_item_id,
+                "type": "multiple_choice",
+                "position": canvas_item.get("position", len(new_questions) + 1),
+                "points_possible": canvas_item.get("points_possible", 1),
+                "question_stem_html": entry.get("item_body", ""),
+                "overall_rationale_html": "",
+                "publish_error": None,
+                "choices": [
+                    {
+                        "internal_choice_id": str(c["id"]),
+                        "position": idx + 1,
+                        "text_html": c.get("item_body", ""),
+                        "is_correct": str(c["id"]) == correct_id,
+                    }
+                    for idx, c in enumerate(canvas_choices)
+                ],
+            }
+            new_questions.append(new_q)
+            changed_question_ids.append(new_q_id)
+            continue
+
+        q_idx = next(i for i, q in enumerate(new_questions) if str(q.get("canvas_item_id")) == canvas_item_id)
+        q_changed = False
+        updated_q = dict(new_questions[q_idx])
+
+        # Check position/ordering
+        canvas_position = canvas_item.get("position")
+        if canvas_position and canvas_position != updated_q.get("position"):
+            updated_q["position"] = canvas_position
+            q_changed = True
+
+        # Check points
+        canvas_points = canvas_item.get("points_possible")
+        if canvas_points is not None and canvas_points != updated_q.get("points_possible"):
+            updated_q["points_possible"] = canvas_points
+            q_changed = True
+
+        # Check question stem (item_body lives in entry)
+        canvas_stem = entry.get("item_body", "")
+        if canvas_stem and canvas_stem != updated_q.get("question_stem_html", ""):
+            updated_q["question_stem_html"] = canvas_stem
+            q_changed = True
+
+        # Check answer choices — match by internal_choice_id which we set as the Canvas choice id
+        canvas_choices = entry.get("interaction_data", {}).get("choices", [])
+        if canvas_choices:
+            canvas_choice_by_id = {str(c["id"]): c for c in canvas_choices}
+            correct_id = entry.get("scoring_data", {}).get("value", "")
+            stored_choice_ids = {stored_c["internal_choice_id"] for stored_c in updated_q.get("choices", [])}
+            new_choices = []
+
+            # Update or drop existing stored choices
+            for stored_c in updated_q.get("choices", []):
+                c_id = stored_c["internal_choice_id"]
+                canvas_c = canvas_choice_by_id.get(c_id)
+                if not canvas_c:
+                    # Choice was removed in Canvas — drop it
+                    q_changed = True
+                    continue
+                updated_c = dict(stored_c)
+                if canvas_c.get("item_body", "") != stored_c.get("text_html", ""):
+                    updated_c["text_html"] = canvas_c["item_body"]
+                    q_changed = True
+                updated_c["is_correct"] = (c_id == correct_id)
+                if updated_c["is_correct"] != stored_c["is_correct"]:
+                    q_changed = True
+                new_choices.append(updated_c)
+
+            # Pick up any new choices added directly in Canvas
+            for canvas_c in canvas_choices:
+                c_id = str(canvas_c["id"])
+                if c_id not in stored_choice_ids:
+                    new_choices.append({
+                        "internal_choice_id": c_id,
+                        "position": len(new_choices) + 1,
+                        "text_html": canvas_c.get("item_body", ""),
+                        "is_correct": (c_id == correct_id),
+                    })
+                    q_changed = True
+
+            updated_q["choices"] = new_choices
+
+        if q_changed:
+            new_questions[q_idx] = updated_q
+            changed_question_ids.append(updated_q["internal_question_id"])
+
+    # Remove questions that no longer exist on Canvas
+    canvas_item_ids = {str(item.get("id", "")) for item in canvas_items}
+    new_questions = [q for q in new_questions if not q.get("canvas_item_id") or str(q.get("canvas_item_id")) in canvas_item_ids]
+
+    # Always sync question_count to the true count after additions and deletions
+    if len(new_questions) != quiz.get("question_count"):
+        db_updates["question_count"] = len(new_questions)
+
+    # Re-sort questions by their (possibly updated) position
+    new_questions.sort(key=lambda q: q.get("position", 0))
+
+    if db_updates or changed_question_ids:
+        db_updates["questions"] = new_questions
+        db_updates["updated_at"] = datetime.now(timezone.utc)
+        course_quizzes_collection.update_one({"_id": ObjectId(quiz_id)}, {"$set": db_updates})
+
+    # Return the updated doc
+    updated_doc = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
+    updated_doc["_id"] = str(updated_doc["_id"])
+    return {"quiz": updated_doc, "changed_question_ids": changed_question_ids}
 
 
 @app.post("/api/quizzes/{quiz_id}/save-to-canvas")

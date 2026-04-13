@@ -239,6 +239,38 @@ def unpublish_canvas_quiz(course_id: int, new_quiz_id: str, canvas_token: str) -
         raise RuntimeError(f"Failed to unpublish quiz: {patch_resp.status_code} {patch_resp.text}")
 
 
+def fetch_canvas_quiz_items(course_id: int, new_quiz_id: str, canvas_token: str) -> list:
+    """
+    Fetches all item (question) data for a New Quiz from Canvas.
+    Returns a list of raw item dicts as returned by Canvas.
+    Raises RuntimeError on failure.
+    """
+    headers = {"Authorization": f"Bearer {canvas_token}"}
+    resp = requests.get(
+        f"{CANVAS_BASE_URL}/api/quiz/v1/courses/{course_id}/quizzes/{new_quiz_id}/items",
+        headers=headers,
+        params={"per_page": 100}
+    )
+    if not resp.ok:
+        raise RuntimeError(f"Failed to fetch quiz items from Canvas: {resp.status_code} {resp.text}")
+    return resp.json()
+
+
+def fetch_canvas_quiz_title(course_id: int, new_quiz_id: str, canvas_token: str) -> str:
+    """
+    Fetches the title of a New Quiz from Canvas.
+    Raises RuntimeError on failure.
+    """
+    headers = {"Authorization": f"Bearer {canvas_token}"}
+    resp = requests.get(
+        f"{CANVAS_BASE_URL}/api/quiz/v1/courses/{course_id}/quizzes/{new_quiz_id}",
+        headers=headers
+    )
+    if not resp.ok:
+        raise RuntimeError(f"Failed to fetch quiz from Canvas: {resp.status_code} {resp.text}")
+    return resp.json().get("title", "")
+
+
 def delete_quiz_from_canvas(course_id: int, new_quiz_id: str, canvas_token: str) -> None:
     """
     Deletes a New Quiz from Canvas. Raises RuntimeError if the request fails.

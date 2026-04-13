@@ -30,6 +30,9 @@ function QuizReview() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Set of internal_question_ids that were updated during the Canvas sync
+  const [changedQuestionIds, setChangedQuestionIds] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     if (!quizId) {
       setError('No quiz ID provided.');
@@ -39,9 +42,20 @@ function QuizReview() {
     async function loadQuiz() {
       try {
         const doc = await api.getQuiz(quizId!);
-        setQuizTitle(doc.title || 'Quiz Review');
-        setQuestions(doc.questions || []);
-        setQuizStatus(doc.status || '');
+        const status = doc.status || '';
+
+        // If the quiz is on Canvas, sync first so we never show stale data
+        if (status === 'saved_to_canvas' || status === 'published_on_canvas') {
+          const syncResult = await api.syncFromCanvas(quizId!);
+          setQuizTitle(syncResult.quiz.title || 'Quiz Review');
+          setQuestions(syncResult.quiz.questions || []);
+          setQuizStatus(status);
+          setChangedQuestionIds(new Set(syncResult.changed_question_ids));
+        } else {
+          setQuizTitle(doc.title || 'Quiz Review');
+          setQuestions(doc.questions || []);
+          setQuizStatus(status);
+        }
       } catch (e: any) {
         setError(e.message || 'Failed to load quiz.');
       } finally {
@@ -99,7 +113,19 @@ function QuizReview() {
     }
   }
 
-if (loading) return <div className="page"><p style={{ padding: '2rem' }}>Loading quiz...</p></div>;
+if (loading) return (
+    <div className="page">
+      <div className="top-bar">
+        <h2 className="top-bar-text">ASSESSLY</h2>
+        <img src={questionMark} alt="Help button" className="top-bar-help" />
+      </div>
+      <hr />
+      <div className="quiz-review-loading-screen">
+        <div className="loader" />
+        <p className="quiz-review-loading-text">Retrieving Quiz</p>
+      </div>
+    </div>
+  );
   if (error) return <div className="page"><p style={{ padding: '2rem' }}>Error: {error}</p></div>;
 
   return (
@@ -149,6 +175,9 @@ if (loading) return <div className="page"><p style={{ padding: '2rem' }}>Loading
                       <div className="quiz-review-title-block">
                         <p className="quiz-review-group">{quizTitle}</p>
                         <p className="quiz-review-question-label">Question {activeQuestionIndex + 1}</p>
+                        {changedQuestionIds.has(activeQuestion.internal_question_id) && (
+                          <span className="quiz-review-new-changes-badge">New Changes</span>
+                        )}
                         <div className="quiz-review-points-row">
                           <input
                             type="number"

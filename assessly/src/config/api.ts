@@ -106,6 +106,16 @@ saveQuizToCanvas: async (quizId: string) => {
     return response.json();
   },
 
+syncFromCanvas: async (quizId: string) => {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE}/api/quizzes/${quizId}/sync-from-canvas`, { method: 'POST', headers });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || 'Failed to sync from Canvas');
+    }
+    return response.json();
+  },
+
 saveQuizEdits: async (quizId: string, questions: { internal_question_id: string; points_possible: number }[]) => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE}/api/quizzes/${quizId}/edits`, {
