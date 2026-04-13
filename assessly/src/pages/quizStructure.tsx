@@ -8,12 +8,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../config/api';
 
 function QuizStructure() {
-    const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
+    // const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
     // Course selection
-    const [courses, setCourses] = useState<any[]>([]);
+    // const [courses, setCourses] = useState<any[]>([]);
     //Selected course ID (from dashboard)
     const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
-    const [isLoadingCourses, setIsLoadingCourses] = useState(false);
+    // const [isLoadingCourses, setIsLoadingCourses] = useState(false);
 
     const [files, setFiles] = useState<any[]>([]);
     const [selectedFileIds, setSelectedFileIds] = useState<number[]>([]);
@@ -23,11 +23,12 @@ function QuizStructure() {
     const [prevQuizzes, setPrevQuizzes] = useState<any[]>([]);
     const [selectedQuizIds, setSelectedQuizIds] = useState<number[]>([]);
     const [quizSearchQuery, setQuizSearchQuery] = useState("");
+    const [isLoadingQuizzes, setIsLoadingQuizzes] = useState(false);
 
     // Quiz generation state
     const [isGenerating, setIsGenerating] = useState(false);
-    const [generatedQuiz, setGeneratedQuiz] = useState<any>(null);
-    const [generateError, setGenerateError] = useState<string | null>(null);
+    // const [generatedQuiz, setGeneratedQuiz] = useState<any>(null);
+    // const [generateError, setGenerateError] = useState<string | null>(null);
 
     //Canvas Quiz Attributes 
     const [title, setTitle] = useState("");
@@ -46,7 +47,7 @@ function QuizStructure() {
     const [enableImageGeneration, setEnableImageGeneration] = useState(false);
     const [additionalNotes, setAdditionalNotes] = useState("");
 
-    const [userAssignmentGroupIds] = useState([{id: 1, name: "Quizzes"}, {id: 2, name: "Ungraded"}]);
+    const [userAssignmentGroupIds, setUserAssignmentGroupIds] = useState<{id: number, name: string}[]>([]);
     const location = useLocation();
 
     const structureQuestions = [
@@ -61,22 +62,22 @@ function QuizStructure() {
     // Load courses on mount
     useEffect(() => {
         async function loadCourses() {
-            setIsLoadingCourses(true);
+            // setIsLoadingCourses(true);
             try {
-                const data = await api.syncCourses();
+                // const data = await api.syncCourses();
                 
-                const teacherCourses = data.courses.filter((course: any) => {
-                    const validRoles = ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment'];
-                    return course.enrollments?.some((enrollment: any) => 
-                        validRoles.includes(enrollment.role)
-                    );
-                });
+                // const teacherCourses = data.courses.filter((course: any) => {
+                //     const validRoles = ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment'];
+                //     return course.enrollments?.some((enrollment: any) => 
+                //         validRoles.includes(enrollment.role)
+                //     );
+                // });
                 
-                setCourses(teacherCourses);
+                // setCourses(teacherCourses);
             } catch (error) {
                 console.error('Failed to load courses:', error);
             } finally {
-                setIsLoadingCourses(false);
+                // setIsLoadingCourses(false);
             }
         }
         loadCourses();
@@ -111,17 +112,30 @@ function QuizStructure() {
             }
         }
         async function loadQuizzes() {
+            setIsLoadingQuizzes(true);
             setQuizSearchQuery("");
             try {
                 const response = await api.getQuizzes(courseId);
                 setPrevQuizzes(response?.quizzes || []);
             } catch (error) {
                 console.error('Failed to load quizzes:', error);
+            } finally {
+                setIsLoadingQuizzes(false);
+            }
+        }
+
+        async function loadAssignmentGroups() {
+            try {
+                const response = await api.getAssignmentGroups(courseId);
+                setUserAssignmentGroupIds(response?.assignment_groups || []);
+            } catch (error) {
+                console.error('Failed to load assignment groups:', error);
             }
         }
 
         loadFiles();
         loadQuizzes();
+        loadAssignmentGroups();
     }, [selectedCourseId]);
 
     function handleFileToggle(fileId: number) {
@@ -190,17 +204,17 @@ function QuizStructure() {
         }
 
         setIsGenerating(true);
-        setGenerateError(null);
+        // setGenerateError(null);
 
         try {
             console.log("Generating quiz from files:", selectedFiles);
-            const result = await api.generateQuiz(selectedFiles, selectedCourseId ?? undefined, selectedQuizIds, parseInt(questionNum) || 5, title);
+            const result = await api.generateQuiz(selectedFiles, selectedCourseId ?? undefined, selectedQuizIds, parseInt(questionNum) || 5, title, instructions);
             console.log("Generated quiz:", result);
-            setGeneratedQuiz(result);
+            // setGeneratedQuiz(result);
             navigate(`/quiz-review?quiz_id=${result.quiz_id}`);
         } catch (error: any) {
             console.error('Failed to generate quiz:', error);
-            setGenerateError(error.message || 'Failed to generate quiz');
+            // setGenerateError(error.message || 'Failed to generate quiz');
             alert(`Error: ${error.message || 'Failed to generate quiz'}`);
         } finally {
             setIsGenerating(false);
@@ -263,15 +277,25 @@ function QuizStructure() {
                         aria-label="Search previous quizzes"
                     />
 
-                    {prevQuizzes.length === 0 && (
+                    {isLoadingQuizzes && (
+                        <div className="loading-status" role="status" aria-live="polite">
+                            <span className="loading-dots" aria-hidden="true">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </span>
+                        </div>
+                    )}
+
+                    {!isLoadingQuizzes && prevQuizzes.length === 0 && (
                         <p>No previous quizzes found for this course to reference</p>
                     )}
 
-                    {prevQuizzes.length > 0 && filteredQuizzes.length === 0 && (
+                    {!isLoadingQuizzes && prevQuizzes.length > 0 && filteredQuizzes.length === 0 && (
                         <p>No matching quizzes found</p>
                     )}
 
-                    {filteredQuizzes.length > 0 && (
+                    {!isLoadingQuizzes && filteredQuizzes.length > 0 && (
                         <div className="quizStepChecklist">
                             {filteredQuizzes.map((quiz) => (
                                 <label key={quiz.id} className="quizFileOption">
@@ -535,8 +559,6 @@ function QuizStructure() {
                 </div>
             );
         }
-
-        return null;
     }
 
     return (

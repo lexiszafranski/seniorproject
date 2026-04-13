@@ -46,3 +46,6 @@
 5. Open `http://localhost:8000/docs` to view and test the API endpoints.
 
 Note: Every time you open a new terminal, activate the venv first with `source venv/bin/activate` before running the server.
+
+## Deployment 
+https://assessly-steel.vercel.app/

@@ -187,6 +187,13 @@ class CanvasContentRetriever:
         - files: List of all files
         - quizzes: List of all quizzes with their questions
     """
+    def get_assignment_groups(self, course_id: int) -> List[Dict]:
+        url = f"{self.base_url}/api/v1/courses/{course_id}/assignment_groups"
+        params = {"per_page": 100}
+        response = requests.get(url, headers=self.headers, params=params)
+        response.raise_for_status()
+        return [{"id": g["id"], "name": g["name"]} for g in response.json()]
+
     def get_all_course_content(self, course_id: int) -> Dict:
         files = self.get_course_files(course_id)
         quizzes = self.get_course_quizzes(course_id)

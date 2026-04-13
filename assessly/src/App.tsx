@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import './styles/App.css';
 import Dashboard from './pages/dashboard';
 import Login from './pages/login';
+import Landing from './pages/landing';
 import AddCourses from './pages/addCourses';
 import Tokens from './pages/tokens';
 import QuizStructure from './pages/quizStructure';
 import QuizReview from './pages/quizReview';
+import { API_BASE } from './config/api';
 
 function App() {
   const { getToken, isSignedIn } = useAuth();
@@ -48,7 +50,8 @@ function App() {
 
       try {
         const token = await getToken();
-        const response = await fetch('http://localhost:8000/api/me', {
+        //const response = await fetch('http://localhost:8000/api/me', {
+        const response = await fetch(`${API_BASE}/api/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -82,8 +85,15 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* Login Route */}
+        <Route
+          path="/landing"
+          element={
+            <SignedOut>
+              <Landing />
+            </SignedOut>
+          }
+        />
         <Route
           path="/login"
           element={
@@ -92,7 +102,6 @@ function App() {
             </SignedOut>
           }
         />
-
         {/* If already signed in, skip login */}
         <Route
           path="/tokens"
@@ -110,7 +119,6 @@ function App() {
             </SignedIn>
           }
         />
-
          {/* Dashboard Route */}
         <Route
           path="/dashboard"
@@ -126,7 +134,6 @@ function App() {
             </SignedIn>
           }
         />
-
         {/* Quiz Structure Route */}
         <Route
           path="/quiz-structure"
@@ -142,7 +149,6 @@ function App() {
             </SignedIn>
           }
         />
-
         {/* Add Courses Route */}
         <Route
           path="/add-courses"
@@ -158,14 +164,13 @@ function App() {
             </SignedIn>
           }
         />
-
          {/* If not signed in, go to login */}
         <Route
           path="/"
           element={
             <>
               <SignedOut>
-                <Navigate to="/login" replace />
+                <Landing />
               </SignedOut>
 
               <SignedIn>

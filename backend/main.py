@@ -34,9 +34,16 @@ load_dotenv()
 
 app = FastAPI()
 
+allowed_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://localhost:5173"
+)
+cors_origins = [origin.strip() for origin in allowed_origins.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    # allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -82,6 +89,7 @@ class GenerateQuizRequest(BaseModel):
     quiz_ids: list[int] = []
     question_count: int = 5
     title: str = "Generated Practice Quiz"
+    instructions: str = ""
 
 
 async def get_current_user(authorization: str = Header(...)) -> dict:
@@ -96,6 +104,14 @@ async def get_current_user(authorization: str = Header(...)) -> dict:
     
     user = get_or_create_user(clerk_data.get("sub"), user_data)
     return user
+
+def assert_course_access(current_user: dict, course_id: int):
+    """Raise 403 if the current user is not enrolled in the given course."""
+    user_courses = current_user.get("courses", [])
+    enrolled_ids = {c["id"] for c in user_courses}
+    if course_id not in enrolled_ids:
+        raise HTTPException(status_code=403, detail="You do not have access to this course.")
+
 
 @app.on_event("startup")
 def startup():
@@ -359,6 +375,26 @@ Example request body:
   ]
 }
 """
+@app.get("/api/courses/{course_id}/assignment-groups")
+async def retrieve_assignment_groups(course_id: int, current_user: dict = Depends(get_current_user)):
+    encrypted_canvas = current_user.get("canvas_token")
+    canvas_token = decrypt(encrypted_canvas) if encrypted_canvas else os.getenv("CANVAS_TOKEN")
+    if not canvas_token:
+        raise HTTPException(status_code=400, detail="No Canvas token found.")
+
+    canvas = CanvasContentRetriever(
+        canvas_url="https://ufl.instructure.com",
+        access_token=canvas_token
+    )
+
+    try:
+        groups = canvas.get_assignment_groups(course_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch assignment groups from Canvas: {str(e)}")
+
+    return {"assignment_groups": groups}
+
+
 @app.post("/api/generate-quiz")
 async def generate_quiz(body: GenerateQuizRequest, current_user: dict = Depends(get_current_user)):
     encrypted_canvas = current_user.get("canvas_token")
@@ -422,13 +458,16 @@ async def generate_quiz(body: GenerateQuizRequest, current_user: dict = Depends(
             "publish_error": None
         })
 
+    if body.course_id:
+        assert_course_access(current_user, body.course_id)
+
     quiz_doc = {
-        "clerk_id": current_user["clerk_id"],
+        "created_by_clerk_id": current_user["clerk_id"],
         "course_id": body.course_id,
         "assignment_id": None,
         "new_quiz_id": None,
         "title": body.title,
-        "description_html": "",
+        "description_html": body.instructions,
         "question_count": len(questions),
         "questions": questions,
         "status": "generated_pending_review",
@@ -453,11 +492,13 @@ async def generate_quiz(body: GenerateQuizRequest, current_user: dict = Depends(
 
 @app.get("/api/courses/{course_id}/assessly-quizzes")
 async def get_assessly_quizzes(course_id: int, current_user: dict = Depends(get_current_user)):
+    assert_course_access(current_user, course_id)
+
     encrypted_canvas = current_user.get("canvas_token")
     canvas_token = decrypt(encrypted_canvas) if encrypted_canvas else os.getenv("CANVAS_TOKEN")
 
     docs = list(course_quizzes_collection.find(
-        {"clerk_id": current_user["clerk_id"], "course_id": course_id},
+        {"course_id": course_id},
         {"_id": 1, "title": 1, "status": 1, "question_count": 1, "created_at": 1, "new_quiz_id": 1}
     ))
 
@@ -516,15 +557,14 @@ async def get_assessly_quizzes(course_id: int, current_user: dict = Depends(get_
 @app.get("/api/quizzes/{quiz_id}")
 async def get_quiz(quiz_id: str, current_user: dict = Depends(get_current_user)):
     try:
-        quiz_doc = course_quizzes_collection.find_one({
-            "_id": ObjectId(quiz_id),
-            "clerk_id": current_user["clerk_id"]
-        })
+        quiz_doc = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid quiz id.")
 
     if not quiz_doc:
         raise HTTPException(status_code=404, detail="Quiz not found.")
+
+    assert_course_access(current_user, quiz_doc["course_id"])
 
     quiz_doc["_id"] = str(quiz_doc["_id"])
     return quiz_doc
@@ -539,11 +579,12 @@ async def sync_from_canvas(quiz_id: str, current_user: dict = Depends(get_curren
     Only applies to quizzes that are saved or published on Canvas.
     """
     try:
-        quiz = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id), "clerk_id": current_user["clerk_id"]})
+        quiz = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid quiz ID.")
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found.")
+    assert_course_access(current_user, quiz["course_id"])
     if quiz.get("status") not in ("saved_to_canvas", "published_on_canvas"):
         # Not on Canvas — nothing to sync
         quiz["_id"] = str(quiz["_id"])
@@ -715,11 +756,12 @@ async def save_to_canvas(quiz_id: str, current_user: dict = Depends(get_current_
         raise HTTPException(status_code=400, detail="No Canvas token found.")
 
     try:
-        quiz_doc = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id), "clerk_id": current_user["clerk_id"]})
+        quiz_doc = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid quiz id.")
     if not quiz_doc:
         raise HTTPException(status_code=404, detail="Quiz not found.")
+    assert_course_access(current_user, quiz_doc["course_id"])
     if quiz_doc["status"] in ("saved_to_canvas", "published_on_canvas"):
         raise HTTPException(status_code=400, detail="Quiz is already on Canvas.")
 
@@ -756,11 +798,12 @@ async def publish_quiz(quiz_id: str, current_user: dict = Depends(get_current_us
         raise HTTPException(status_code=400, detail="No Canvas token found.")
 
     try:
-        quiz_doc = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id), "clerk_id": current_user["clerk_id"]})
+        quiz_doc = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid quiz id.")
     if not quiz_doc:
         raise HTTPException(status_code=404, detail="Quiz not found.")
+    assert_course_access(current_user, quiz_doc["course_id"])
     if quiz_doc["status"] == "published_on_canvas":
         raise HTTPException(status_code=400, detail="Quiz is already published.")
 
@@ -808,7 +851,7 @@ async def delete_quiz(quiz_id: str, current_user: dict = Depends(get_current_use
     Delete a quiz from MongoDB and, if it exists on Canvas, from Canvas too.
     """
     try:
-        quiz = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id), "clerk_id": current_user["clerk_id"]})
+        quiz = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
     except Exception:
         # ObjectId() throws if quiz_id is malformed (wrong format) — that's a bad request, not a missing resource
         raise HTTPException(status_code=400, detail="Invalid quiz ID.")
@@ -816,6 +859,8 @@ async def delete_quiz(quiz_id: str, current_user: dict = Depends(get_current_use
     # ObjectId was valid but no document matched — the quiz genuinely doesn't exist
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found.")
+
+    assert_course_access(current_user, quiz["course_id"])
 
     # Delete from Canvas if it was published/saved there
     new_quiz_id = quiz.get("new_quiz_id")
@@ -842,11 +887,12 @@ async def revert_to_draft(quiz_id: str, current_user: dict = Depends(get_current
     Only valid for quizzes with status saved_to_canvas.
     """
     try:
-        quiz = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id), "clerk_id": current_user["clerk_id"]})
+        quiz = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid quiz ID.")
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found.")
+    assert_course_access(current_user, quiz["course_id"])
     if quiz["status"] not in ("saved_to_canvas", "published_on_canvas"):
         raise HTTPException(status_code=400, detail="Only quizzes on Canvas can be reverted to draft.")
 
@@ -885,11 +931,12 @@ async def unpublish_quiz(quiz_id: str, current_user: dict = Depends(get_current_
     Status → saved_to_canvas.
     """
     try:
-        quiz = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id), "clerk_id": current_user["clerk_id"]})
+        quiz = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid quiz ID.")
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found.")
+    assert_course_access(current_user, quiz["course_id"])
     if quiz["status"] != "published_on_canvas":
         raise HTTPException(status_code=400, detail="Only published quizzes can be unpublished.")
 
@@ -932,11 +979,12 @@ async def save_quiz_edits(quiz_id: str, body: SaveQuizEditsBody, current_user: d
     If the quiz is on Canvas, also syncs points to each Canvas item.
     """
     try:
-        quiz = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id), "clerk_id": current_user["clerk_id"]})
+        quiz = course_quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid quiz ID.")
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found.")
+    assert_course_access(current_user, quiz["course_id"])
 
     # Build a lookup from internal_question_id → index in the questions array
     id_to_index = {q["internal_question_id"]: i for i, q in enumerate(quiz.get("questions", []))}

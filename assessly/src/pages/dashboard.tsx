@@ -34,7 +34,7 @@ function Dashboard() {
   ).toUpperCase();
 
   async function handleLogout() {
-    await signOut({ redirectUrl: '/login' });
+    await signOut({ redirectUrl: '/landing' });
   }
   
   useEffect(() => {

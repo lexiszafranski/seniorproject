@@ -1,13 +1,17 @@
-import {
-  mockSyncCoursesResponse,
-  mockQuizzesResponse,
-  mockFilesResponse,
-  mockQuestionsResponse,
-} from "../config/mockData";
+// import {
+//   mockSyncCoursesResponse,
+//   mockQuizzesResponse,
+//   mockFilesResponse,
+//   mockQuestionsResponse,
+// } from "../config/mockData";
 
-const USE_MOCK = false; // Changed to false to use real backend
+// const USE_MOCK = false; // Changed to false to use real backend
 
-const API_BASE = "http://localhost:8000";
+// const API_BASE = "http://localhost:8000";
+const rawApiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+export const API_BASE = rawApiBase.startsWith('http://') || rawApiBase.startsWith('https://')
+  ? rawApiBase.replace(/\/$/, '')
+  : `https://${rawApiBase.replace(/\/$/, '')}`;
 
 // Helper to get Clerk token
 async function getAuthHeaders() {
@@ -62,6 +66,13 @@ export const api = {
     if (!response.ok) {
       throw new Error('Failed to get questions');
     }
+    return response.json();
+  },
+
+getAssignmentGroups: async (courseId: number) => {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE}/api/courses/${courseId}/assignment-groups`, { headers });
+    if (!response.ok) throw new Error('Failed to get assignment groups');
     return response.json();
   },
 
@@ -160,12 +171,12 @@ deleteQuiz: async (quizId: string) => {
     return response.json();
   },
 
-generateQuiz: async (files: { url: string; display_name: string; content_type: string }[], course_id?: number, quiz_ids?: number[], question_count?: number, title?: string) => {
+generateQuiz: async (files: { url: string; display_name: string; content_type: string }[], course_id?: number, quiz_ids?: number[], question_count?: number, title?: string, instructions?: string) => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE}/api/generate-quiz`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ files, course_id, quiz_ids: quiz_ids ?? [], question_count: question_count ?? 5, title: title || "Generated Practice Quiz" })
+      body: JSON.stringify({ files, course_id, quiz_ids: quiz_ids ?? [], question_count: question_count ?? 5, title: title || "Generated Practice Quiz", instructions: instructions ?? "" })
     });
     if (!response.ok) {
       let detail = 'Failed to generate quiz';
