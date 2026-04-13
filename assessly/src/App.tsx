@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import './styles/App.css';
 import Dashboard from './pages/dashboard';
 import Login from './pages/login';
+import Landing from './pages/landing';
 import AddCourses from './pages/addCourses';
 import Tokens from './pages/tokens';
 import QuizStructure from './pages/quizStructure';
@@ -84,7 +85,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* Login Route */}
         <Route
           path="/login"
@@ -94,7 +94,6 @@ function App() {
             </SignedOut>
           }
         />
-
         {/* If already signed in, skip login */}
         <Route
           path="/tokens"
@@ -112,7 +111,6 @@ function App() {
             </SignedIn>
           }
         />
-
          {/* Dashboard Route */}
         <Route
           path="/dashboard"
@@ -128,7 +126,6 @@ function App() {
             </SignedIn>
           }
         />
-
         {/* Quiz Structure Route */}
         <Route
           path="/quiz-structure"
@@ -144,7 +141,6 @@ function App() {
             </SignedIn>
           }
         />
-
         {/* Add Courses Route */}
         <Route
           path="/add-courses"
@@ -160,14 +156,13 @@ function App() {
             </SignedIn>
           }
         />
-
          {/* If not signed in, go to login */}
         <Route
           path="/"
           element={
             <>
               <SignedOut>
-                <Navigate to="/login" replace />
+                <Landing />
               </SignedOut>
 
               <SignedIn>
