@@ -47,7 +47,7 @@ function QuizStructure() {
     const [enableImageGeneration, setEnableImageGeneration] = useState(false);
     const [additionalNotes, setAdditionalNotes] = useState("");
 
-    const [userAssignmentGroupIds] = useState([{id: 1, name: "Quizzes"}, {id: 2, name: "Ungraded"}]);
+    const [userAssignmentGroupIds, setUserAssignmentGroupIds] = useState<{id: number, name: string}[]>([]);
     const location = useLocation();
 
     const structureQuestions = [
@@ -124,8 +124,18 @@ function QuizStructure() {
             }
         }
 
+        async function loadAssignmentGroups() {
+            try {
+                const response = await api.getAssignmentGroups(courseId);
+                setUserAssignmentGroupIds(response?.assignment_groups || []);
+            } catch (error) {
+                console.error('Failed to load assignment groups:', error);
+            }
+        }
+
         loadFiles();
         loadQuizzes();
+        loadAssignmentGroups();
     }, [selectedCourseId]);
 
     function handleFileToggle(fileId: number) {
@@ -198,7 +208,7 @@ function QuizStructure() {
 
         try {
             console.log("Generating quiz from files:", selectedFiles);
-            const result = await api.generateQuiz(selectedFiles, selectedCourseId ?? undefined, selectedQuizIds, parseInt(questionNum) || 5, title);
+            const result = await api.generateQuiz(selectedFiles, selectedCourseId ?? undefined, selectedQuizIds, parseInt(questionNum) || 5, title, instructions);
             console.log("Generated quiz:", result);
             // setGeneratedQuiz(result);
             navigate(`/quiz-review?quiz_id=${result.quiz_id}`);
@@ -549,8 +559,6 @@ function QuizStructure() {
                 </div>
             );
         }
-
-        return null;
     }
 
     return (

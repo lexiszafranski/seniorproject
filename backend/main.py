@@ -89,6 +89,7 @@ class GenerateQuizRequest(BaseModel):
     quiz_ids: list[int] = []
     question_count: int = 5
     title: str = "Generated Practice Quiz"
+    instructions: str = ""
 
 
 async def get_current_user(authorization: str = Header(...)) -> dict:
@@ -374,6 +375,26 @@ Example request body:
   ]
 }
 """
+@app.get("/api/courses/{course_id}/assignment-groups")
+async def retrieve_assignment_groups(course_id: int, current_user: dict = Depends(get_current_user)):
+    encrypted_canvas = current_user.get("canvas_token")
+    canvas_token = decrypt(encrypted_canvas) if encrypted_canvas else os.getenv("CANVAS_TOKEN")
+    if not canvas_token:
+        raise HTTPException(status_code=400, detail="No Canvas token found.")
+
+    canvas = CanvasContentRetriever(
+        canvas_url="https://ufl.instructure.com",
+        access_token=canvas_token
+    )
+
+    try:
+        groups = canvas.get_assignment_groups(course_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch assignment groups from Canvas: {str(e)}")
+
+    return {"assignment_groups": groups}
+
+
 @app.post("/api/generate-quiz")
 async def generate_quiz(body: GenerateQuizRequest, current_user: dict = Depends(get_current_user)):
     encrypted_canvas = current_user.get("canvas_token")
@@ -446,7 +467,7 @@ async def generate_quiz(body: GenerateQuizRequest, current_user: dict = Depends(
         "assignment_id": None,
         "new_quiz_id": None,
         "title": body.title,
-        "description_html": "",
+        "description_html": body.instructions,
         "question_count": len(questions),
         "questions": questions,
         "status": "generated_pending_review",
