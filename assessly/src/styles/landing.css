@@ -1,0 +1,423 @@
+:root {
+    color-scheme: light;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+.landing-shell {
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 72% 18%, rgba(90, 229, 188, 0.35), transparent 22%),
+        radial-gradient(circle at 74% 42%, rgba(74, 222, 128, 0.18), transparent 28%),
+        linear-gradient(180deg, #f9fffc 0%, #ffffff 52%, #fcfffe 100%);
+    color: #1f2937;
+}
+
+.landing-shell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(rgba(16, 185, 129, 0.08) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.14), transparent 70%);
+    pointer-events: none;
+}
+
+.landing-frame {
+    position: relative;
+    z-index: 1;
+    margin: 40px 80px;
+    padding: 20px 20px 36px;
+}
+
+.landing-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 22px;
+    border: 1px solid rgba(156, 163, 175, 0.24);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.74);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(14px);
+}
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+    font-size: 20px;
+    font-style: italic;
+    font-weight: 700;
+    line-height: normal;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+    font-family: "Red Hat Display", sans-serif;
+}
+
+.brand:hover {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #22b67e;
+    font-size: 20px;
+    font-style: italic;
+    font-weight: 700;
+    line-height: normal;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+    font-family: "Red Hat Display", sans-serif;
+}
+
+.nav-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.nav-link {
+    color: #1f2937;
+    text-decoration: none;
+    font-size: 0.98rem;
+    font-weight: 500;
+}
+.nav-link:hover {
+    color: #22b67e;
+    text-decoration: none;
+    font-size: 0.98rem;
+    font-weight: 500;
+}
+
+.button-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 999px;
+    padding: 0.92rem 1.35rem;
+    text-decoration: none;
+    font-weight: 700;
+    transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.button-link:hover {
+    transform: translateY(-1px);
+}
+
+.button-link.primary {
+    background: linear-gradient(135deg, #27c48a, #22b67e);
+    color: #ffffff;
+    box-shadow: 0 16px 28px rgba(34, 182, 126, 0.28);
+}
+
+.button-link.secondary {
+    background: rgba(255, 255, 255, 0.72);
+    color: #1f2937;
+    border: 1px solid rgba(156, 163, 175, 0.22);
+}
+
+.hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    grid-template-rows: auto;
+    align-items: flex-start;
+    gap: 28px;
+    padding: 52px 6px 6px;
+    /* min-height: calc(100vh - 132px); */
+    margin-top: 50px;
+}
+
+.hero-copy {
+    max-width: 100%;
+    padding-top: 22px;
+}
+
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 0.55rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(156, 163, 175, 0.18);
+    color: #0f766e;
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.hero-title {
+    margin: 0;
+    color: #343a40;
+    font-size: clamp(2.6rem, 5vw, 4.9rem);
+    line-height: 0.98;
+    letter-spacing: -0.05em;
+    font-weight: 800;
+    text-wrap: balance;
+}
+
+.hero-title span {
+    display: block;
+}
+
+.hero-subtitle {
+    margin: 18px 0 28px;
+    max-width: 560px;
+    color: #4b5563;
+    font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+    font-style: italic;
+    line-height: 1.6;
+}
+
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.scroll-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #0f766e;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    letter-spacing: 0.01em;
+}
+
+.scroll-cta:hover {
+    color: #0b5f58;
+}
+
+.hero-visual {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+    overflow: visible;
+}
+
+.hero-glow {
+    position: absolute;
+    inset: 7% 8% 6% 18%;
+    border-radius: 40% 60% 52% 48% / 48% 42% 58% 52%;
+    background: radial-gradient(circle at 55% 44%, rgba(96, 233, 180, 0.82), rgba(129, 230, 217, 0.28) 42%, rgba(236, 253, 245, 0) 72%);
+    filter: blur(10px);
+    opacity: 0.85;
+    max-height:500px;
+}
+
+.hero-star {
+    position: absolute;
+    top: 8%;
+    left: 5%;
+    width: clamp(72px, 11vw, 118px);
+    transform: rotate(-10deg);
+    filter: drop-shadow(0 10px 12px rgba(245, 158, 11, 0.28));
+}
+
+.hero-laptop {
+    position: relative;
+    width: min(300%, 800px);
+    max-width: 300%;
+    filter: drop-shadow(0 22px 28px rgba(15, 23, 42, 0.2));
+    animation: float 5.5s ease-in-out infinite;
+}
+
+.pipeline {
+    margin-top: 10px;
+    padding: 12px 0 10px;
+    scroll-margin-top: 18px;
+    margin-bottom: 200px;
+}
+
+.pipeline-heading {
+    margin: 0 0 20px;
+    text-align: center;
+    color: #4b5563;
+    font-size: 1.5rem;
+    font-style: italic;
+}
+
+.pipeline-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.pipeline-card {
+    padding: 18px 18px 20px;
+    text-align: center;
+}
+
+.pipeline-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    margin-bottom: 10px;
+    color: #17a87a;
+}
+
+.pipeline-title {
+    margin: 0 0 8px;
+    color: #222;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.pipeline-copy {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.95rem;
+    line-height: 1.65;
+}
+
+.soft-panel {
+    background: rgba(255, 255, 255, 0.48);
+    border: 1px solid rgba(156, 163, 175, 0.16);
+    border-radius: 300px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+    backdrop-filter: blur(12px);
+}
+
+.soft-panel-card {
+    background: rgba(255, 255, 255, 0.48);
+    border: 1px solid rgba(156, 163, 175, 0.16);
+    border-radius: 20px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+    backdrop-filter: blur(12px);
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-50px);
+    }
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .landing-frame {
+        margin: 24px 36px;
+    }
+
+    .hero {
+        grid-template-columns: 1fr;
+        gap: 18px;
+        padding-top: 36px;
+        min-height: auto;
+    }
+
+    .hero-copy {
+        max-width: 760px;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .hero-actions {
+        justify-content: center;
+    }
+
+    .scroll-cta {
+        justify-content: center;
+    }
+
+    .hero-visual {
+        min-height: 360px;
+    }
+
+    .hero-star {
+        left: 20%;
+        top: 10;
+    }
+    .pipeline-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Mobile */
+@media (max-width: 720px) {
+    .landing-frame {
+    margin: 12px 14px;
+    padding: 12px 12px 24px;
+    position: relative;
+    z-index: 1;
+    }
+
+    .landing-nav {
+        padding: 14px 16px;
+        border-radius: 24px;
+        flex-wrap: wrap;
+    }
+
+    .nav-actions {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .hero {
+        padding: 30px 0 12px;
+    }
+
+    .hero-copy {
+        text-align: left;
+    }
+
+    .hero-actions {
+        justify-content: flex-start;
+    }
+
+    .scroll-cta {
+        justify-content: flex-start;
+    }
+
+    .hero-visual {
+        min-height: 280px;
+    }
+
+    .hero-laptop {
+        width: min(110%, 520px);
+    }
+
+    .hero-star {
+        left: 4%;
+        top: 0;
+    }
+
+    .pipeline {
+        padding-top: 28px;
+    }
+
+    .pipeline-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .scroll-cta {
+    margin-left: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #0f766e;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    letter-spacing: 0.01em;
+}
+}
