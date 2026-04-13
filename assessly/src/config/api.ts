@@ -1,11 +1,11 @@
-import {
-  mockSyncCoursesResponse,
-  mockQuizzesResponse,
-  mockFilesResponse,
-  mockQuestionsResponse,
-} from "../config/mockData";
+// import {
+//   mockSyncCoursesResponse,
+//   mockQuizzesResponse,
+//   mockFilesResponse,
+//   mockQuestionsResponse,
+// } from "../config/mockData";
 
-const USE_MOCK = false; // Changed to false to use real backend
+// const USE_MOCK = false; // Changed to false to use real backend
 
 const API_BASE = "http://localhost:8000";
 

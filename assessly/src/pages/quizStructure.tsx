@@ -8,12 +8,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../config/api';
 
 function QuizStructure() {
-    const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
+    // const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
     // Course selection
-    const [courses, setCourses] = useState<any[]>([]);
+    // const [courses, setCourses] = useState<any[]>([]);
     //Selected course ID (from dashboard)
     const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
-    const [isLoadingCourses, setIsLoadingCourses] = useState(false);
+    // const [isLoadingCourses, setIsLoadingCourses] = useState(false);
 
     const [files, setFiles] = useState<any[]>([]);
     const [selectedFileIds, setSelectedFileIds] = useState<number[]>([]);
@@ -26,8 +26,8 @@ function QuizStructure() {
 
     // Quiz generation state
     const [isGenerating, setIsGenerating] = useState(false);
-    const [generatedQuiz, setGeneratedQuiz] = useState<any>(null);
-    const [generateError, setGenerateError] = useState<string | null>(null);
+    // const [generatedQuiz, setGeneratedQuiz] = useState<any>(null);
+    // const [generateError, setGenerateError] = useState<string | null>(null);
 
     //Canvas Quiz Attributes 
     const [title, setTitle] = useState("");
@@ -61,22 +61,22 @@ function QuizStructure() {
     // Load courses on mount
     useEffect(() => {
         async function loadCourses() {
-            setIsLoadingCourses(true);
+            // setIsLoadingCourses(true);
             try {
-                const data = await api.syncCourses();
+                // const data = await api.syncCourses();
                 
-                const teacherCourses = data.courses.filter((course: any) => {
-                    const validRoles = ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment'];
-                    return course.enrollments?.some((enrollment: any) => 
-                        validRoles.includes(enrollment.role)
-                    );
-                });
+                // const teacherCourses = data.courses.filter((course: any) => {
+                //     const validRoles = ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment'];
+                //     return course.enrollments?.some((enrollment: any) => 
+                //         validRoles.includes(enrollment.role)
+                //     );
+                // });
                 
-                setCourses(teacherCourses);
+                // setCourses(teacherCourses);
             } catch (error) {
                 console.error('Failed to load courses:', error);
             } finally {
-                setIsLoadingCourses(false);
+                // setIsLoadingCourses(false);
             }
         }
         loadCourses();
@@ -190,17 +190,17 @@ function QuizStructure() {
         }
 
         setIsGenerating(true);
-        setGenerateError(null);
+        // setGenerateError(null);
 
         try {
             console.log("Generating quiz from files:", selectedFiles);
             const result = await api.generateQuiz(selectedFiles, selectedCourseId ?? undefined, selectedQuizIds, parseInt(questionNum) || 5, title);
             console.log("Generated quiz:", result);
-            setGeneratedQuiz(result);
+            // setGeneratedQuiz(result);
             navigate(`/quiz-review?quiz_id=${result.quiz_id}`);
         } catch (error: any) {
             console.error('Failed to generate quiz:', error);
-            setGenerateError(error.message || 'Failed to generate quiz');
+            // setGenerateError(error.message || 'Failed to generate quiz');
             alert(`Error: ${error.message || 'Failed to generate quiz'}`);
         } finally {
             setIsGenerating(false);
