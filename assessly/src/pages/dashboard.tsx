@@ -1,23 +1,28 @@
-import { useUser, useClerk } from '@clerk/clerk-react';
+// import { useUser, useClerk } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/dashboard.css';
 import '../styles/quizStructure.css';
-import ufImg from '../assets/ufimg.png';
+import '../styles/DashboardCard.css'
 import cardImg from '../assets/cardimg.jpg';
 import { useEffect, useState } from 'react';
 import { api } from "../config/api";
 import backArrow from '../assets/Caret_Left.png';
+import NavBar from '../components/NavBar';
+import QuizLayout from '../components/QuizLayout';
+import {PlusIcon} from '@phosphor-icons/react';
 
 
 function Dashboard() {
-  const { user } = useUser();
-  const { signOut } = useClerk();
+  // const { user } = useUser();
+  // const { signOut } = useClerk();
   const navigate = useNavigate();
   const [coursesWithQuizzes, setCoursesWithQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [isCourseLoading, setIsCourseLoading] = useState(false);
   const [syncWarning, setSyncWarning] = useState(false);
+  const [quizFilter, setQuizFilter] = useState<'drafts' | 'published' | 'all'>('all');
+  const [quizSearch, setQuizSearch] = useState('');
   // TODO: retrieve recently drafted quizzes 
   //const [cachedQuizzes, setCachedQuizzes] = useState<any[]>([]);
   // Dummy data 
@@ -25,17 +30,6 @@ function Dashboard() {
     {"id": 1000, "title": "Temp Quiz 1", question_count: 10, points_possible: 10},
     {"id": 2000, "title": "Temp Quiz 2", question_count: 15, points_possible: 15}
   ];
-  const userInitial = (
-    user?.firstName?.[0] ||
-    user?.lastName?.[0] ||
-    user?.fullName?.[0] ||
-    user?.primaryEmailAddress?.emailAddress?.[0] ||
-    'U'
-  ).toUpperCase();
-
-  async function handleLogout() {
-    await signOut({ redirectUrl: '/landing' });
-  }
   
   useEffect(() => {
     async function loadCourses() {
@@ -60,6 +54,8 @@ function Dashboard() {
 
   async function handleCourseClick(course: any) {
     setSyncWarning(false);
+    setQuizFilter('all');
+    setQuizSearch('');
     setIsCourseLoading(true);
     try {
       const quizzesData = await api.getAssesslyQuizzes(course.id);
@@ -76,54 +72,52 @@ function Dashboard() {
       setIsCourseLoading(false);
     }
   }
+
+  const selectedCourseQuizzes = selectedCourse?.quizzes ?? [];
+  const filteredQuizzes = selectedCourseQuizzes.filter((quiz: any) => {
+    const isPublished = quiz.status === 'published_on_canvas' || quiz.status === 'saved_to_canvas';
+    const matchesFilter =
+      quizFilter === 'all' ||
+      (quizFilter === 'published' && isPublished) ||
+      (quizFilter === 'drafts' && !isPublished);
+    const matchesSearch = quiz.title?.toLowerCase().includes(quizSearch.toLowerCase());
+
+    return matchesFilter && matchesSearch;
+  });
+
+  if (isCourseLoading) return (
+    <div className="page">
+      <div className="quiz-review-loading-screen">
+        <div className="loader" />
+        <p className="quiz-review-loading-text">Retrieving Quiz</p>
+      </div>
+    </div>
+  );
   
   return (
+    <div>
+      <NavBar />
     <div className="dashboard">
-      <header className="header">
-        <div className="header-logo">
-        <img src={ufImg} alt="description" style={{ width: '100px', height: 'auto'}} />
-        </div>
-        <h1 className="header-welcome">WELCOME BACK, {user?.firstName?.toUpperCase() || 'User'}!</h1>
-        <div className="header-actions">
-          {/* <button 
-            type="button" 
-            className="btn-new-quiz"
-            onClick={() => navigate('/quiz-structure')}
-          >
-            New Quiz
-          </button> */}
-          <div className="header-avatar" aria-label="User profile initial">
-            {userInitial}
-          </div>
-          <button type="button" className="btn-logout" onClick={handleLogout}>
-            <span className="btn-logout-icon" aria-hidden="true"></span>
-          </button>
-        </div>
-      </header>
-
-      <hr className="separator" />
-
       <main className="main">
-        {isCourseLoading ? (
-          <div className="quiz-review-loading-screen">
-            <div className="loader" />
-            <p className="quiz-review-loading-text">Retrieving Course Practice Material</p>
-          </div>
-        ) : selectedCourse ? (
+        {selectedCourse ? (
           <section className="section">
             <div className="quiz-header">
               <div className="sub-nav">
                 <button
                   type="button"
                   className="review-back-nav"
-                  onClick={() => setSelectedCourse(null)}
+                  onClick={() => {
+                    setSelectedCourse(null);
+                    setQuizFilter('all');
+                    setQuizSearch('');
+                  }}
                   aria-label="Go back"
                   style={{marginBottom: 0}}
                 >
                   <img src={backArrow} className="back-arrow" alt="" />
                 </button>
 
-                <h2 className="section-heading" style={{marginBottom: 0}}>Your Practice Quizzes</h2>  
+                <h2 className="section-heading" style={{marginBottom: 0}}>{selectedCourse.name}</h2>  
               </div>
 
               <button 
@@ -131,7 +125,7 @@ function Dashboard() {
               className="btn-new-quiz"
               onClick={() => navigate('/quiz-structure', { state: { selectedCourseId: selectedCourse.id } })}
             >
-              New Quiz
+              <PlusIcon size={20} weight="regular"/>Create new quiz
             </button>
             </div>
             {syncWarning && (
@@ -140,48 +134,74 @@ function Dashboard() {
                 Unable to sync with Canvas at the moment.
               </div>
             )}
-            <h2 className="section-heading" style={{fontWeight: "400"}}>Synced with Canvas</h2>
-            <div className="cards">
-              {selectedCourse.quizzes?.filter((q: any) => q.status === 'published_on_canvas' || q.status === 'saved_to_canvas').length > 0 ? (
-                selectedCourse.quizzes.filter((q: any) => q.status === 'published_on_canvas' || q.status === 'saved_to_canvas').map((quiz: any) => (
-                  <article className="card" key={quiz._id} onClick={() => navigate(`/quiz-review?quiz_id=${quiz._id}`)} style={{ cursor: 'pointer' }}>
-                    <img src={cardImg} alt={quiz.title} className="card-image" />
-                    <h3 className="card-title">{quiz.title}</h3>
-                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#666' }}>
-                      {quiz.question_count} {quiz.question_count === 1 ? 'Question' : 'Questions'}
-                    </p>
-                    {quiz.status === 'published_on_canvas' ? (
-                      <span style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#2e7d5e', background: 'rgba(46,125,94,0.1)', border: '1px solid rgba(46,125,94,0.3)', borderRadius: '4px', padding: '2px 8px' }}>
-                        Published
-                      </span>
-                    ) : (
-                      <span style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#b07d00', background: 'rgba(176,125,0,0.1)', border: '1px solid rgba(176,125,0,0.3)', borderRadius: '4px', padding: '2px 8px' }}>
-                        Saved to Canvas
-                      </span>
-                    )}
-                  </article>
-                ))
-              ) : (
-                <p>No quizzes synced with Canvas</p>
-              )}
+            <div className="quiz-filter-row">
+              <div className="quiz-filter-pill" role="tablist" aria-label="Filter quizzes">
+                <button
+                  type="button"
+                  className={`quiz-filter-btn ${quizFilter === 'drafts' ? 'is-active' : ''}`}
+                  onClick={() => setQuizFilter('drafts')}
+                >
+                  Drafts
+                </button>
+                <button
+                  type="button"
+                  className={`quiz-filter-btn ${quizFilter === 'published' ? 'is-active' : ''}`}
+                  onClick={() => setQuizFilter('published')}
+                >
+                  Published
+                </button>
+                <button
+                  type="button"
+                  className={`quiz-filter-btn ${quizFilter === 'all' ? 'is-active' : ''}`}
+                  onClick={() => setQuizFilter('all')}
+                >
+                  All
+                </button>
+              </div>
             </div>
-            <h2 className="section-heading" style={{fontWeight: "400"}}>Drafts</h2>
-            <div className="cards">
-              {selectedCourse.quizzes?.filter((q: any) => q.status !== 'published_on_canvas' && q.status !== 'saved_to_canvas').length > 0 ? (
-                selectedCourse.quizzes.filter((q: any) => q.status !== 'published_on_canvas' && q.status !== 'saved_to_canvas').map((quiz: any) => (
-                  <article className="card" key={quiz._id} onClick={() => navigate(`/quiz-review?quiz_id=${quiz._id}`)} style={{ cursor: 'pointer' }}>
-                    <img src={cardImg} alt={quiz.title} className="card-image" />
-                    <h3 className="card-title">{quiz.title}</h3>
-                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#666' }}>
-                      {quiz.question_count} {quiz.question_count === 1 ? 'Question' : 'Questions'}
-                    </p>
-                    <span style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#888', background: 'rgba(136,136,136,0.1)', border: '1px solid rgba(136,136,136,0.3)', borderRadius: '4px', padding: '2px 8px' }}>
-                      Pending Review
-                    </span>
-                  </article>
-                ))
+
+            <div className="quiz-search-wrap">
+              <input
+                type="text"
+                className="quiz-search-input"
+                placeholder="Search created quizzes"
+                value={quizSearch}
+                onChange={(event) => setQuizSearch(event.target.value)}
+              />
+            </div>
+
+            <div className="course-quizzes">
+              {filteredQuizzes.length > 0 ? (
+                filteredQuizzes.map((quiz: any) => {
+                  const isPublished = quiz.status === 'published_on_canvas' || quiz.status === 'saved_to_canvas';
+                  const statusText = isPublished
+                    ? quiz.status === 'published_on_canvas'
+                      ? 'Published'
+                      : 'Saved'
+                    : 'Review';
+                  const statusTone: 'Published' | 'Saved' | 'Review' = isPublished
+                    ? quiz.status === 'published_on_canvas'
+                      ? 'Published'
+                      : 'Saved'
+                    : 'Review';
+
+                  return (
+                    <QuizLayout
+                      onClick={() => navigate(`/quiz-review?quiz_id=${quiz._id}`)}
+                      key={quiz._id || quiz.id}
+                      icon={isPublished ? 'published' : 'draft'}
+                      title={quiz.title}
+                      imageAlt={quiz.title}
+                      count={quiz.question_count}
+                      singularLabel="question"
+                      pluralLabel="questions"
+                      statusText={statusText}
+                      statusTone={statusTone}
+                    />
+                  );
+                })
               ) : (
-                <p>No drafts</p>
+                <p>No quizzes match the selected filter.</p>
               )}
             </div>
           </section>
@@ -191,16 +211,22 @@ function Dashboard() {
             <h2 className="section-heading">Continue working</h2>
             <div className="cards">
                 {cachedQuizzes.map((quiz: any) => (
-                  <article className="card" key={quiz.id}>
-                    <img src={cardImg} alt={quiz.title} className="card-image" />
-                    <h3 className="card-title">{quiz.title}</h3>
-                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#666' }}>
-                      {quiz.question_count} {quiz.question_count === 1 ? 'question' : 'questions'} • {quiz.points_possible} points
-                    </p>
-                  </article>
+                  <QuizLayout
+                    key={quiz.id}
+                    icon="draft"
+                    title={quiz.title}
+                    // imageSrc={cardImg}
+                    // imageAlt={quiz.title}
+                    count={quiz.question_count}
+                    singularLabel="question"
+                    pluralLabel="questions"
+                    statusText='Editing'
+                    statusTone='Editing'
+                    date="April 14, 2026"
+                  />
                 ))}
             </div>
-            <h2 className="section-heading">Dashboard</h2>
+            <h2 className="section-heading">Your courses</h2>
             <div className="cards">
               {loading ? (
                 <div className="loading-status" role="status" aria-live="polite">
@@ -232,6 +258,7 @@ function Dashboard() {
           </section>
         )}
       </main>
+    </div>
     </div>
   );
 }
