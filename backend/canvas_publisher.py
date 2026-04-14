@@ -12,6 +12,7 @@ On any failure the exception bubbles up to the caller, which writes publish_fail
 import requests
 
 
+
 CANVAS_BASE_URL = "https://ufl.instructure.com"
 
 

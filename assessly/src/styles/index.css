@@ -1,4 +1,9 @@
 :root {
+  --color-dark-green: #468278;
+  --color-white: #ffffff;
+  --color-background-gray: #F3F3F3;
+  --color-accent-green: #21A27A;
+
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
