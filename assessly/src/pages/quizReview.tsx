@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-
-// import questionMark from '../assets/Question_Mark.png';
 import backArrow from '../assets/Caret_Left.png';
 import { api } from '../config/api';
 
@@ -132,13 +130,6 @@ function QuizReview() {
     <div>
       <NavBar />
     <div className="page qr-page">
-      {/* Top bar */}
-      {/* <div className="top-bar">
-        <h2 className="top-bar-text" onClick={() => navigate('/dashboard')}>ASSESSLY</h2>
-        <img src={questionMark} alt="Help button" className="top-bar-help" />
-      </div>
-      <hr /> */}
-
       {/* Two-column layout */}
       <div className="qr-layout">
 

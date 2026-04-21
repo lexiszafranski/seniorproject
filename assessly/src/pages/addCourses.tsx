@@ -2,7 +2,6 @@ import loginImg from '../assets/Login/Login_Image.png';
 import '../styles/Login.css';
 import {useState} from 'react';
 function AddCourses() {
-    // Placeholder for courses, replace with actual data fetching logic
     const [courses, setCourses] = useState([
         {id: 1, name: "COP3530 - Data Structures and Algorithms", isChecked: false}, 
         {id: 2, name: "COP3502 - Programming Fundamentals 1", isChecked: false}, 

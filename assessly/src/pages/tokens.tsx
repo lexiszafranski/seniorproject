@@ -21,7 +21,6 @@ function Tokens({ onTokensSaved }: { onTokensSaved: () => void }) {
     setLoading(true);
     try {
       const token = await getToken();
-      // const response = await fetch('http://localhost:8000/api/tokens', {
       const response = await fetch(`${API_BASE}/api/tokens`, {  
         method: 'POST',
         headers: {

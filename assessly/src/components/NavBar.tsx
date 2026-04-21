@@ -32,7 +32,7 @@ const { user } = useUser();
             <div className="header-avatar" aria-label="User profile initial">
                 {userInitial}
             </div>
-            <SignOutIcon size={30} weight="regular" className="btn-logout" onClick={handleLogout}/>
+            <SignOutIcon size={30} weight="regular" className="btn-logout" aria-label="logout" onClick={handleLogout}/>
         </div>
     </header>
 );

@@ -1,4 +1,3 @@
-// import { useUser, useClerk } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/dashboard.css';
 import '../styles/quizStructure.css';
@@ -13,8 +12,6 @@ import {PlusIcon} from '@phosphor-icons/react';
 
 
 function Dashboard() {
-  // const { user } = useUser();
-  // const { signOut } = useClerk();
   const navigate = useNavigate();
   const [coursesWithQuizzes, setCoursesWithQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,9 +20,6 @@ function Dashboard() {
   const [syncWarning, setSyncWarning] = useState(false);
   const [quizFilter, setQuizFilter] = useState<'drafts' | 'published' | 'all'>('all');
   const [quizSearch, setQuizSearch] = useState('');
-  // TODO: retrieve recently drafted quizzes 
-  //const [cachedQuizzes, setCachedQuizzes] = useState<any[]>([]);
-  // Dummy data 
   const cachedQuizzes = [
     {"id": 1000, "title": "Temp Quiz 1", question_count: 10, points_possible: 10},
     {"id": 2000, "title": "Temp Quiz 2", question_count: 15, points_possible: 15}
@@ -114,7 +108,7 @@ function Dashboard() {
                   aria-label="Go back"
                   style={{marginBottom: 0}}
                 >
-                  <img src={backArrow} className="back-arrow" alt="" />
+                  <img src={backArrow} className="back-arrow" alt="back" />
                 </button>
 
                 <h2 className="section-heading" style={{marginBottom: 0}}>{selectedCourse.name}</h2>  
@@ -215,8 +209,6 @@ function Dashboard() {
                     key={quiz.id}
                     icon="draft"
                     title={quiz.title}
-                    // imageSrc={cardImg}
-                    // imageAlt={quiz.title}
                     count={quiz.question_count}
                     singularLabel="question"
                     pluralLabel="questions"

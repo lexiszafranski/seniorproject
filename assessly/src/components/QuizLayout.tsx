@@ -1,11 +1,3 @@
-// import {
-//     ArrowRightIcon,
-//     ArrowDownIcon,
-//     BinocularsIcon,
-//     FileTextIcon,
-//     SparkleIcon,
-//     UploadSimpleIcon,
-// } from '@phosphor-icons/react';
 import DraftIcon from '../assets/SpinnerGap.svg';
 import PublishedIcon from '../assets/RocketLaunch.svg';
 
@@ -18,7 +10,6 @@ interface QuizLayoutProps {
     count?: number;
     singularLabel?: string;
     pluralLabel?: string;
-    //   pointsPossible?: number;
     statusText?: string;
     statusTone?: QuizLayoutTone;
     date?: string;
@@ -41,28 +32,10 @@ function QuizLayout({
   const countText = hasCount
     ? `${count} ${count === 1 ? singularLabel : pluralLabel}`
     : '';
-//   const pointsText = typeof pointsPossible === 'number' ? ` • ${pointsPossible} points` : '';
   const metaText = `${countText}`.trim();
   const quizIcon = icon === 'draft' ? DraftIcon : PublishedIcon;
 
   return (
-    // <div
-    //   className="card"
-    //   onClick={onClick}
-    //   style={onClick ? { cursor: 'pointer' } : undefined}
-    //   role={onClick ? 'button' : undefined}
-    //   tabIndex={onClick ? 0 : undefined}
-    //   onKeyDown={
-    //     onClick
-    //       ? (event) => {
-    //           if (event.key === 'Enter' || event.key === ' ') {
-    //             event.preventDefault();
-    //             onClick();
-    //           }
-    //         }
-    //       : undefined
-    //   }
-    // >
     <div className="quiz"
         onClick={onClick}
         style={onClick ? { cursor: 'pointer' } : undefined}
@@ -96,7 +69,6 @@ function QuizLayout({
             <p className="quiz-metrics-date">{date}</p>
         </div> 
       </div>
-    // </div>
   );
 }
 
