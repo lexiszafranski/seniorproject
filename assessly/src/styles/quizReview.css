@@ -2,6 +2,7 @@
 
 .qr-page {
   overflow: hidden;
+  background-color: var(--color-background-gray);
 }
 
 .qr-layout {

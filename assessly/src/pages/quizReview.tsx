@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-
-import questionMark from '../assets/Question_Mark.png';
 import backArrow from '../assets/Caret_Left.png';
 import { api } from '../config/api';
 
 import '../styles/quizStructure.css';
 import '../styles/quizReview.css';
+
+import NavBar from '../components/NavBar';
 
 /** Strip HTML tags, returning plain text for display in inputs/textareas. */
 function stripHtml(html: string): string {
@@ -117,11 +117,6 @@ function QuizReview() {
 
   if (loading) return (
     <div className="page">
-      <div className="top-bar">
-        <h2 className="top-bar-text">ASSESSLY</h2>
-        <img src={questionMark} alt="Help button" className="top-bar-help" />
-      </div>
-      <hr />
       <div className="quiz-review-loading-screen">
         <div className="loader" />
         <p className="quiz-review-loading-text">Retrieving Quiz</p>
@@ -132,14 +127,9 @@ function QuizReview() {
   if (error) return <div className="page"><p style={{ padding: '2rem' }}>Error: {error}</p></div>;
 
   return (
+    <div>
+      <NavBar />
     <div className="page qr-page">
-      {/* Top bar */}
-      <div className="top-bar">
-        <h2 className="top-bar-text" onClick={() => navigate('/dashboard')}>ASSESSLY</h2>
-        <img src={questionMark} alt="Help button" className="top-bar-help" />
-      </div>
-      <hr />
-
       {/* Two-column layout */}
       <div className="qr-layout">
 
@@ -480,6 +470,7 @@ function QuizReview() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

@@ -8,13 +8,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../config/api';
 
 function QuizStructure() {
-    // const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
-    // Course selection
-    // const [courses, setCourses] = useState<any[]>([]);
     //Selected course ID (from dashboard)
     const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
-    // const [isLoadingCourses, setIsLoadingCourses] = useState(false);
-
     const [files, setFiles] = useState<any[]>([]);
     const [selectedFileIds, setSelectedFileIds] = useState<number[]>([]);
     const [materialSearchQuery, setMaterialSearchQuery] = useState("");
@@ -27,8 +22,6 @@ function QuizStructure() {
 
     // Quiz generation state
     const [isGenerating, setIsGenerating] = useState(false);
-    // const [generatedQuiz, setGeneratedQuiz] = useState<any>(null);
-    // const [generateError, setGenerateError] = useState<string | null>(null);
 
     //Canvas Quiz Attributes 
     const [title, setTitle] = useState("");
@@ -38,7 +31,6 @@ function QuizStructure() {
     const [multiple_attempts_enabled, setMultipleAttemptsEnabled] = useState(false);
     const [has_time_limit, setHasTimeLimit] = useState(false);
     const [session_time_limit_in_seconds, setSessionTimeLimitInSeconds] = useState<number | null>(null);
-    // const [result_view_restricted, setResultViewRestricted] = useState(false);
     const [displayResultsWithItems, setDisplayResultsWithItems] = useState(false);
     const [isAssignmentGroupOpen, setIsAssignmentGroupOpen] = useState(false);
 
@@ -62,22 +54,10 @@ function QuizStructure() {
     // Load courses on mount
     useEffect(() => {
         async function loadCourses() {
-            // setIsLoadingCourses(true);
             try {
-                // const data = await api.syncCourses();
-                
-                // const teacherCourses = data.courses.filter((course: any) => {
-                //     const validRoles = ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment'];
-                //     return course.enrollments?.some((enrollment: any) => 
-                //         validRoles.includes(enrollment.role)
-                //     );
-                // });
-                
-                // setCourses(teacherCourses);
             } catch (error) {
                 console.error('Failed to load courses:', error);
             } finally {
-                // setIsLoadingCourses(false);
             }
         }
         loadCourses();
@@ -87,7 +67,6 @@ function QuizStructure() {
         const state = location.state as { selectedCourseId?: number } | null;
         if (state?.selectedCourseId != null) {
             setSelectedCourseId(state.selectedCourseId);
-            console.log("course ID:" + selectedCourseId);
         }
     }, [location.state]);
 
@@ -204,17 +183,12 @@ function QuizStructure() {
         }
 
         setIsGenerating(true);
-        // setGenerateError(null);
 
         try {
-            console.log("Generating quiz from files:", selectedFiles);
             const result = await api.generateQuiz(selectedFiles, selectedCourseId ?? undefined, selectedQuizIds, parseInt(questionNum) || 5, title, instructions);
-            console.log("Generated quiz:", result);
-            // setGeneratedQuiz(result);
             navigate(`/quiz-review?quiz_id=${result.quiz_id}`);
         } catch (error: any) {
             console.error('Failed to generate quiz:', error);
-            // setGenerateError(error.message || 'Failed to generate quiz');
             alert(`Error: ${error.message || 'Failed to generate quiz'}`);
         } finally {
             setIsGenerating(false);
@@ -222,43 +196,6 @@ function QuizStructure() {
     }
 
     function getQuizQuestionContent() {
-        // Step 0: Choose Course
-        // if (index === 0) {
-        //     return (
-        //         <div className="quizStepPanel">
-        //             {isLoadingCourses && 
-        //             <div className="loading-status" role="status" aria-live="polite">
-        //             <span className="loading-dots" aria-hidden="true">
-        //                 <span></span>
-        //                 <span></span>
-        //                 <span></span>
-        //             </span>
-        //             </div>
-        //             }
-                    
-        //             {!isLoadingCourses && courses.length === 0 && (
-        //                 <p>No courses found where you are a Teacher or TA</p>
-        //             )}
-
-        //             {!isLoadingCourses && courses.length > 0 && (
-        //                 <div className="quizStepChecklist">
-        //                     {courses.map((course) => (
-        //                         <label key={course.id} className="quizFileOption">
-        //                             <input
-        //                                 type="radio"
-        //                                 name="courseSelection"
-        //                                 checked={selectedCourseId === course.id}
-        //                                 onChange={() => setSelectedCourseId(course.id)}
-        //                                 className="quizCheckbox"
-        //                             />
-        //                             {course.name}
-        //                         </label>
-        //                     ))}
-        //                 </div>
-        //             )}
-        //         </div>
-        //     );
-        // }
         // Step 1: Choose Canvas Quizzes 
         if (index === 0) {
             const filteredQuizzes = prevQuizzes.filter((quiz) => {
@@ -331,15 +268,6 @@ function QuizStructure() {
                         aria-label="Search materials"
                     />
                 <div className="quizQuestionContainer quizStepMaterialsList">
-                    {/* <input
-                        type="text"
-                        value={materialSearchQuery}
-                        onChange={(e) => setMaterialSearchQuery(e.target.value)}
-                        placeholder="Search Canvas materials"
-                        className="quizMaterialSearch"
-                        aria-label="Search materials"
-                    /> */}
-
                     {isLoadingFiles && 
                         <div className="loading-status" role="status" aria-live="polite">
                         <span className="loading-dots" aria-hidden="true">
@@ -488,17 +416,6 @@ function QuizStructure() {
                             />
                         </div>
                     )}
-                    {/* Display results toggle 
-                    <div className="quizQuestionContainerToggle">
-                        <p>Display Results</p>
-                        <label className="toggleSwitch">
-                            <input type="checkbox"
-                            checked={result_view_restricted}
-                            onChange={(e) => setResultViewRestricted(e.target.checked)}
-                            />
-                            <span className="slider"></span>
-                        </label>
-                    </div> */}
                    {/* Display results with items  */}
                     <div className="quizQuestionContainerToggle">
                         <p>Display Results with Items</p>

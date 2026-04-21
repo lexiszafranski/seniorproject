@@ -81,7 +81,7 @@ function Landing() {
 
                 <div className="hero-visual" aria-hidden="true">
                     <div className="hero-glow" />
-                    <img className="hero-star" src={starImage} alt="" />
+                    <img className="hero-star" src={starImage} alt="star" />
                     <img className="hero-laptop" src={laptopImage} alt="Laptop illustration" />
                 </div>
             </section>
