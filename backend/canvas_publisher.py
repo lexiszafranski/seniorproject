@@ -274,11 +274,14 @@ def fetch_canvas_quiz_title(course_id: int, new_quiz_id: str, canvas_token: str)
 
 def delete_quiz_from_canvas(course_id: int, new_quiz_id: str, canvas_token: str) -> None:
     """
-    Deletes a New Quiz from Canvas. Raises RuntimeError if the request fails.
+    Deletes a New Quiz from Canvas via the assignments API.
+    The New Quizzes quiz endpoint does not support DELETE — the assignment must be deleted instead.
+    For New Quizzes, assignment_id == new_quiz_id.
+    Raises RuntimeError if the request fails.
     """
     headers = {"Authorization": f"Bearer {canvas_token}"}
     resp = requests.delete(
-        f"{CANVAS_BASE_URL}/api/quiz/v1/courses/{course_id}/quizzes/{new_quiz_id}",
+        f"{CANVAS_BASE_URL}/api/v1/courses/{course_id}/assignments/{new_quiz_id}",
         headers=headers
     )
     if not resp.ok:

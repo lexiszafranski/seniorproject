@@ -148,17 +148,3 @@ def generate_quiz_from_files(files: list, canvas_token: str, gemini_token: str =
                 client.files.delete(name=uploaded.name)
             except Exception:
                 pass
-
-
-if __name__ == "__main__":
-    import os
-    test_files = [
-        {
-            "url": "https://ufl.instructure.com/files/105079458/download?download_frd=1&verifier=fLAcntrkIOwpDeBbldHFSg8D8lcnWTz2zWt0Ffns",
-            "display_name": "1 - Algorithmic Analysis.pdf",
-            "content_type": "application/pdf"
-        }
-    ]
-    result = generate_quiz_from_files(test_files, os.getenv("CANVAS_TOKEN"), os.getenv("GEMINI_KEY"))
-    print("\n--- GENERATED QUIZ ---")
-    print(json.dumps(result, indent=2))
